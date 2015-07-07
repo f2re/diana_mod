@@ -1,0 +1,22 @@
+Source: metlibs-diana-difield
+Priority: optional
+Maintainer: Borge Moe <borge.moe@met.no>
+Build-Depends:  debhelper (>= 7), autotools-dev, g++,
+ autoconf (>=2.61), automake (>= 1.10), libtool (>= 1.5),
+ metlibs-putools-dev (>= 5.0.0), metlibs-milogger-dev (>= 5.0.0),
+ metlibs-puctools-dev (>= 5.0.0), metlibs-pudatatypes-dev (>= 5.0.0),
+ libudunits2-dev, libproj-dev, libfimex-dev (>= 0.50),
+ libgtest-dev
+Standards-Version: 3.7.3
+Section: libs
+
+Package: metlibs-difield-dev
+Section: libdevel
+Architecture: any
+Depends: metlibs-putools-dev, metlibs-milogger-dev,  metlibs-puctools-dev,
+ metlibs-pudatatypes-dev,
+ libproj-dev, libfimex-dev,
+ ${misc:Depends}
+Description: diField.
+ metlibs diField.
+

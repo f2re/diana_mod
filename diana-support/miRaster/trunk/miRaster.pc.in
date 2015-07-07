@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: miRaster
+Description: The miRaster Library
+Version: @VERSION@
+Requires:  puCtools >= 5.0.0, puTools >= 5.0.0
+Libs: -fPIC -L${libdir} -lmiRaster @HDF5_LDFLAGS@ @HDF5_LIBS@ @PROJ_LDFLAGS@ @PROJ_LIBS@ @GEOTIFF_LDFLAGS@ @GEOTIFF_LIBS@ @TIFF_LDFLAGS@ @TIFF_LIBS@ @BOOST_THREAD_LIBS@
+Cflags: -I${includedir} -fPIC

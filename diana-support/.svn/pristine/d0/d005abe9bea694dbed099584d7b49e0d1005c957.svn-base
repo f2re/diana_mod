@@ -1,0 +1,21 @@
+Source: metlibs-diana-miraster
+Priority: optional
+Maintainer: Borge Moe <borge.moe@met.no>
+Build-Depends:  debhelper (>= 7), autotools-dev, g++,
+  autoconf (>=2.61), automake (>= 1.10), libtool (>= 1.5),
+  metlibs-putools-dev, metlibs-puctools-dev,
+  zlib1g-dev, libjpeg-dev, libgeotiff-dev, libproj-dev,
+  libboost-thread-dev
+Standards-Version: 3.7.3
+Section: libs
+
+Package: metlibs-miraster-dev
+Section: libdevel
+Architecture: any
+Depends: metlibs-putools-dev, metlibs-puctools-dev,
+ zlib1g-dev, libjpeg-dev, 
+ libgeotiff-dev, libproj-dev, ${misc:Depends}
+Description: miRaster
+ metlibs miRaster.
+
+

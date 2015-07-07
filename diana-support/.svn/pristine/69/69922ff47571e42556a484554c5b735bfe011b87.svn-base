@@ -1,0 +1,238 @@
+metlibs-diana-difield (5.5.5-2) unstable; urgency=low
+
+  * build from tag difield_5.5.5
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 06 Mar 2015 10:03:54 +0100
+
+metlibs-diana-difield (5.5.5-1) unstable; urgency=low
+
+  * vcross: show vertical lines at requested points
+  * vcross: use CDMExtractor to make slice on vertical transformation
+  * Fimex: libfimex-0.57-0 (0.57-1)
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Sun, 01 Mar 2015 19:49:43 +0100
+
+metlibs-diana-difield (5.5.4-1) unstable; urgency=low
+
+  * GridInventory: If param has eaxis with one level, do not use eaxis in inventory
+  * vcross::Crossection::dynamic()
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 11 Feb 2015 13:04:42 +0100
+
+metlibs-diana-difield (5.5.3-1) unstable; urgency=low
+
+  * FimexSource: use vcross_name:bounds attribute
+  * diMetConstants: added function ICAO altitude -> pressure
+  * Disable glob in GridCollection when using glob in fimex
+  * VcrossData: Increased MAX_DISTANCE_M to 10000
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 11 Feb 2015 11:11:01 +0100
+
+metlibs-diana-difield (5.5.2-1) unstable; urgency=low
+
+  * reference times in vcross::Source
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 05 Feb 2015 12:31:37 +0100
+
+metlibs-diana-difield (5.5.1-1) unstable; urgency=low
+
+  * Flightlevels: kept old table in order to support old input files
+  * removed some unused functions / variables
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 28 Jan 2015 11:49:07 +0100
+
+metlibs-diana-difield (5.5.0-1) unstable; urgency=low
+
+  * Using fimex interpolator
+  * Removed FieldSource and obsolete field options
+  * use altitude from fimex
+  * fixed EMEP dynamic vcross
+  * diField: Do not change grid if grids are equal
+  * Inventory: Removed ModelInventory 
+  * added function to calculate FL from pressure
+  * reshape: allow inflation of shaped variable
+  * Fimex: 0.56-1
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 23 Jan 2015 10:55:22 +0100
+
+metlibs-diana-difield (5.4.0-1) unstable; urgency=low
+
+  * FimexSource: pressureField and heightField in ZAxisData
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 05 Dec 2014 15:33:26 +0100
+
+metlibs-diana-difield (5.3.1-1) unstable; urgency=low
+
+  * Bugfix: showalterindex
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 26 Nov 2014 10:14:47 +0100
+
+metlibs-diana-difield (5.3.0-1) unstable; urgency=low
+
+  * FieldFunctions
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 21 Nov 2014 12:32:27 +0100
+
+metlibs-diana-difield (5.2.12-4) unstable; urgency=low
+
+  * new debian revision
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 12 Nov 2014 17:36:31 +0100
+
+metlibs-diana-difield (5.2.12-3) unstable; urgency=low
+
+  * new debian revision
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 11 Nov 2014 16:42:20 +0100
+
+metlibs-diana-difield (5.2.12-2) unstable; urgency=low
+
+  * new debian revision
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 06 Nov 2014 12:50:35 +0100
+
+metlibs-diana-difield (5.2.12-1) unstable; urgency=low
+
+  * FieldFunctions: typo
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 28 Oct 2014 07:05:56 +0100
+
+metlibs-diana-difield (5.2.11-1) unstable; urgency=low
+
+  * made unit conversion independent of Values::shape()
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 21 Oct 2014 16:07:39 +0200
+
+metlibs-diana-difield (5.2.10-1) unstable; urgency=low
+
+  * FieldFunctions - bugfix probability functions
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 15 Oct 2014 14:45:08 +0200
+
+metlibs-diana-difield (5.2.9-1) unstable; urgency=low
+
+  * shape in vcross::Values
+  * FimexSource::getWaveSpectrumValues
+  * support retrieving values for dimensions in getWaveSpectrumValues 
+  * shape in vcross::Values
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 14 Oct 2014 09:59:32 +0200
+
+metlibs-diana-difield (5.2.8-1) unstable; urgency=low
+
+  * Bugfix: check if feltReader exists before creating 
+  * FimexSource: accept incomplete vertical transformations
+  * FimexSource: do not skip last predefined cross-section
+  * FieldFunctions: using % in probability function
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 23 Sep 2014 13:58:58 +0200
+
+metlibs-diana-difield (5.2.7-2) unstable; urgency=low
+
+  * FieldFunctions: using % in probability function 
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 27 Aug 2014 14:50:34 +0200
+
+metlibs-diana-difield (5.2.7-1) unstable; urgency=low
+
+  * FieldFunctions: new probability function - probability_between
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 26 Aug 2014 09:18:42 +0200
+
+metlibs-diana-difield (5.2.6-1) unstable; urgency=low
+
+  * FieldFunctions: new probability functions
+  * FimexIO: Palette from file
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Mon, 11 Aug 2014 10:28:00 +0200
+
+metlibs-diana-difield (5.2.5-1) precise; urgency=low
+
+  * Bugfix: vertical profiles
+  * TimeFilter: adding seconds
+
+ -- Lisbeth Bergholt <lisbethb@met.no>  Sat, 07 Jun 2014 09:24:22 +0200
+
+metlibs-diana-difield (5.2.4-1) unstable; urgency=low
+
+  * Vcross: clipping fixed
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Sun, 01 Jun 2014 19:46:13 +0200
+
+metlibs-diana-difield (5.2.3-1) unstable; urgency=low
+
+  * Bugfix: unit of vertical axis (pressure)
+  * dynamic cross sections: use intermediate points from fimex CDMInterpolator
+  * vcross FimexSource: search time values with some tolerance
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Mon, 26 May 2014 13:48:11 +0200
+
+metlibs-diana-difield (5.2.2-2) unstable; urgency=low
+
+  * new debian revision
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 21 May 2014 13:56:42 +0200
+
+metlibs-diana-difield (5.2.2-1) unstable; urgency=low
+
+  * FieldFunctions - unit -> units
+  * VcrossUtil - day1 = 00001-01-01
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 16 May 2014 13:57:02 +0200
+
+metlibs-diana-difield (5.2.1-2) unstable; urgency=low
+
+  * VcrossUtil - day0->day1
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 29 Apr 2014 09:09:50 +0200
+
+metlibs-diana-difield (5.2.1-1) unstable; urgency=low
+
+  * New vessel_icing algorithm
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 26 Mar 2014 15:08:14 +0100
+
+metlibs-diana-difield (5.2.0-1) unstable; urgency=low
+
+  * Vcross - new files
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 20 Mar 2014 13:19:35 +0100
+
+metlibs-diana-difield (5.1.0-2) unstable; urgency=low
+
+  * Bugfix: putData - output_time
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 07 Mar 2014 14:42:55 +0100
+
+metlibs-diana-difield (5.1.0-1) unstable; urgency=low
+
+  * New setup option: turnwavedirection
+  * Accepting vcross with one point - vertical profile
+  * New method: getGrid(modelName)
+  * WriteField with given output_time
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Mon, 03 Mar 2014 14:59:15 +0100
+
+metlibs-diana-difield (5.0.1-1) unstable; urgency=low
+
+  * workaround for bdiana using static libs to build shared lib
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 05 Feb 2014 15:42:01 +0100
+
+metlibs-diana-difield (5.0.0-3) unstable; urgency=low
+
+  * fixed typo in configure.ac; add BOOST_LDFLAGS to pkg-config file
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 05 Feb 2014 13:19:38 +0100
+
+metlibs-diana-difield (5.0.0-2) unstable; urgency=low
+
+  * fixes
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 04 Feb 2014 16:28:51 +0100
+
+metlibs-diana-difield (5.0.0-1) unstable; urgency=low
+
+  * Split from all-in-one metlibs
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Mon, 03 Feb 2014 11:44:12 +0100

@@ -1,0 +1,13 @@
+Library diField - Version 3.2.1
+Reading and writing fields
+
+
+Description
+===========
+
+
+Requirements
+============
+You should use gcc version 4.1.1 or higher when compiling diField, but older 
+versions may also work. Other compilers than gcc may also be used, but 
+only gcc has been thoroughly tested. 
