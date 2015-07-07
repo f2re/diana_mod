@@ -1,0 +1,1456 @@
+#----------------------------------------------------------------------------------
+# Setupfile for Diana
+#----------------------------------------------------------------------------------
+# Organized in sections, each section within a <SSS> </SSS> pair, where
+# SSS is the name of the section
+# Ex: <BASIC> ... </BASIC> contains the 'BASIC' section
+#
+# Common structures in all sections:
+# KEYWORD                     : Turns on/off feature
+# KEY=VALUE                   : Defines keyword with value
+# KEY=V1,V2,V3                : Defines keyword with list of values
+# KEY=V11:V12:V13,V21:V22     : Defines keyword with list of lists of values
+# KEY=VALUE KEY=V1,V2,V3 ...  : Combinations of key-defines
+#
+#----------------------------------------------------------------------------------
+# Other features:
+# Refer to environment/shell variable XX with ${XX}
+# Ex: ${HOME} will be expanded to the home-path
+#
+# Define local variables with XX=yy (outside all sections), and refer to them
+# with $(XX)
+# Ex: Add ROOT=/metno/local in a separate line outside all sections.
+#     All occurences of $(ROOT) in later lines will be expanded to /metno/local
+#
+# Long lines may be split up by using '\'. Add a '\' (and newline) where you want to
+# split a line.
+#
+# Include another file with %include "filename". Included file inherits section at
+# the point of inclusion. File must start and end with the same section. Files may be
+# nested.
+#
+# Use keyword CLEAR to clear all previous definitions for a specific section. Only
+# valid within a section. Useful in local files which include the official setupfile
+#----------------------------------------------------------------------------------
+
+
+prefix  = ${DIANADIR} || @prefix@
+exec_prefix     = @prefix@
+etc_dir         = @sysconfdir@
+share_dir       = @datarootdir@
+bin_dir         = @bindir@
+share_diana_dir = $(share_dir)/diana/@PVERSION@
+OPDATA    = $(share_diana_dir)/demodata
+MAPDIR    = $(share_diana_dir)/maps
+
+<BASIC>
+fontpath=$(share_diana_dir)/fonts
+docpath=$(share_dir)/doc/diana-@PVERSION@
+obsPlotFilePath=$(share_diana_dir)
+qserver=$(bin_dir)/coserver4
+imagepath=$(share_diana_dir)/images/
+amdarStationList=$(share_diana_dir)/amdar.stations
+languagepaths=$(share_diana_dir)/lang:lang:../lang:$(prefix)/translations:${QTDIR}/translations
+setenv=BUFR_TABLES,/usr/local/lib/bufrtables/,1
+language=en
+avatars=${HOME}/.diana/avatars/*.png
+</BASIC>
+
+<FONTS>
+#-----------------------------------------------------------------------------
+# font:        Family name
+# type:        Bitmap (screen fonts with postscript equivalent) |
+#              Scaleable (truetype rendered as polygons)
+# name:        X-fontdefinitions for bitmap fonts, name of fontfile for scaleable fonts
+# face:        NORMAL | ITALIC | BOLD | BOLD_ITALIC (for scaleable fonts)
+# postscript : For bitmap fonts, postscript-equivalent name (for postscript output)
+#-----------------------------------------------------------------------------
+# Scalable (truetype/polygon) fonts
+#-----------------------------------------------------------------------------
+
+font=Symbol type=scaleable face=NORMAL name=metsymbols.ttf
+
+font=VeraPolygon  type=scaleable face=NORMAL name=Vera.ttf
+font=VeraPolygon  type=scaleable face=BOLD name=VeraBd.ttf
+font=VeraPolygon  type=scaleable face=ITALIC name=VeraIt.ttf
+font=VeraPolygon  type=scaleable face=BOLD_ITALIC name=VeraBI.ttf
+
+#-----------------------------------------------------------------------------
+# Bitmap (truetype/bitmap) fonts
+#-----------------------------------------------------------------------------
+
+font=VeraBitmap  type=tt_bitmap face=NORMAL name=Vera.ttf postscript=Helvetica ps-scale-x=1.0
+font=VeraBitmap  type=tt_bitmap face=BOLD name=VeraBd.ttf postscript=Helvetica ps-scale-x=1.0
+font=VeraBitmap  type=tt_bitmap face=ITALIC name=VeraIt.ttf postscript=Helvetica ps-scale-x=1.0
+font=VeraBitmap  type=tt_bitmap face=BOLD_ITALIC name=VeraBI.ttf postscript=Helvetica ps-scale-x=1.0
+
+#-----------------------------------------------------------------------------
+# Texture (Qt-based) fonts
+#-----------------------------------------------------------------------------
+
+#font=Helvetica type=texture face=NORMAL      name=Helvetica postscript=Helvetica
+#font=Helvetica type=texture face=BOLD        name=Helvetica postscript=Helvetica-Bold
+#font=Helvetica type=texture face=ITALIC      name=Helvetica postscript=Helvetica-Oblique
+#font=Helvetica type=texture face=BOLD_ITALIC name=Helvetica postscript=Helvetica-BoldOblique
+
+#-----------------------------------------------------------------------------
+# Defaults for 'magic' fontnames
+#-----------------------------------------------------------------------------
+BITMAPFONT=VeraBitmap  # Use this as default bitmap font
+SCALEFONT=VeraPolygon  # Use this as default scaleable font
+METSYMBOLFONT=Symbol   # Use this as default font for meteorological symbols
+
+</FONTS>
+
+<LABELS>
+LABEL data font=BITMAPFONT fontsize=8
+LABEL text="$day $date $auto UTC" tcolour=red bcolour=black fcolour=white:200 polystyle=both halign=left valign=top font=BITMAPFONT fontsize=8
+LABEL anno=<table,fcolour=white:150> halign=right valign=top polystyle=none margin=0 fontsize=10
+LABEL anno=<arrow> halign=right valign=bottom fcolour=220:220:220:160 fontsize=12
+</LABELS>
+
+<IMAGE_GALLERY>
+basicpath=$(share_diana_dir)/images
+
+markerpath=$(share_diana_dir)/images/markers
+marker=$(share_diana_dir)/images/vprof_normal.xpm
+marker=$(share_diana_dir)/images/vprof_selected.xpm
+
+patternpath=$(share_diana_dir)/images/patterns
+</IMAGE_GALLERY>
+
+
+<COLOURS>
+#------------------------------------------------------------
+# Colour definitions (default set of colours in SetupParser)
+#------------------------------------------------------------
+white=        255,255,255
+grayWhite=    224,224,224
+lightGray=    192,192,192
+gray=         160,160,164
+darkGray=     128,128,128
+black=        0,0,0
+
+blue=         0,0,255
+red=          255,0,0
+green=        0,255,0
+cyan=         0,255,255
+magenta=      255,0,255
+yellow=       255,255,0
+
+lightBlue=    51,51,255
+
+darkRed=      128,0,0
+darkGreen=    0,128,0
+darkBlue=     0,0,128
+darkCyan=     0,128,128
+darkMagenta=  128,0,128
+darkYellow=   128,128,0
+
+brown=        178,51,0
+orange=       255,89,0
+purple=       160,32,240
+
+midnightBlue= 25,25,112
+dnmiGreen=    43,120,36
+dnmiBlue=     0,54,125
+
+green2=       0,238,0
+green3=       0,205,0
+green4=       0,139,0
+
+flesh=      240,158,92
+seablue=    117,199,242
+
+
+blank=        0,0,0,0
+</COLOURS>
+
+
+<PALETTES>
+#------------------------------------------------------------
+# Palettes
+#------------------------------------------------------------
+lightblue= 245:245:255,235:235:255,225:225:255,215:215:255,200:200:255,175:175:255,150:150:255,125:125:255,100:100:255,75:75:255,50:50:255,25:25:255,0:0:255
+lightblue_rev= 0:0:255,25:25:255,50:50:255,75:75:255,100:100:255,125:125:255,150:150:255,175:175:255,200:200:255,215:215:255,225:225:255,235:235:255,245:245:255
+darkblue= 0:0:255,0:0:245,0:0:235,0:0:225,0:0:215,0:0:200,0:0:175,0:0:150,0:0:125;0:0:100,0:0:75,0:0:50,0:0:25
+darkblue_rev= 0:0:25,0:0:50,0:0:75,0:0:100,0:0:125,0:0:150,0:0:175,0:0:200,0:0:215,0:0:225,0:0:235,0:0:245,0:0:255
+lightred= 255:245:245,255:235:235,255:225:225,255:215:215,255:200:200,255:175:175,255:150:150,255:125:125,255:100:100,255:75:75,255:50:50,255:25:25,255:0:0
+lightred_rev= 255:25:25,255:50:50,255:75:75,255:100:100,255:125:125,255:150:150,255:175:175,255:200:200,255:215:215,255:225:225,255:235:235,255:245:245
+darkred= 255:0:0,245:0:0,235:0:0,225:0:0,215:0:0,200:0:0,175:0:0,150:0:0,150:0:0,100:0:0,75:0:0,50:0:0,25:0:0
+darkred_rev= 25:0:0,50:0:0,75:0:0,100:0:0,125:0:0,150:0:0,175:0:0,200:0:0,215:0:0,225:0:0,235:0:0,245:0:0,255:0:0
+green = 200:255:178,178:235:154,154:215:130,130:200:109,109:175:83,64:135:35,40:115:20
+green_rev = 40:115:20,64:135:35,109:175:83,130:200:109,154:215:130,178:235:154,200:255:178
+orange=255:255:230,255:235:200,255:215:170,255:195:140,255:175:110,255:155:70,255:135:40
+orange_rev=255:135:40,255:155:70,255:175:110,255:195:140,255:215:170,255:235:200,255:255:230
+</PALETTES>
+
+
+<FILLPATTERNS>
+#------------------------------------------------------------
+# fillpatterns
+#------------------------------------------------------------
+ice=empty,empty,diag,squares,horizontal,vertical_broken,circles,dots,diag,solid,empty
+lines=diag,horizontal,vertical
+</FILLPATTERNS>
+
+
+<LINETYPES>
+#------------------------------------------------------------
+# Linetypes
+#------------------------------------------------------------
+solid=   1111111111111111
+dash=    1111000011110000
+dot=     1100110011001100
+dashdot= 1111000011001100
+longdash=1111100011111000
+sos=     1010101100110011
+longlongdash=0x0FFF:2
+dash2=0x00FF
+dash3=0x3f3f
+empty=0000000000000000
+</LINETYPES>
+
+
+<PRINTING>
+printcommand=lpr -h -{hash}{numcopies} -P {printer} {filename}
+
+# user-defined printer-specific commands
+manualcommands==$(share_diana_dir)/printer.def
+</PRINTING>
+
+
+<QUICKMENUS>
+#------------------------------------------------------------
+# files containing different quickmenus
+#------------------------------------------------------------
+</QUICKMENUS>
+
+
+# See diFieldFunctions.h or other documnetation
+
+geopotential_height_pl=divide(geopotential_pl,9.81)
+
+# computations in pressure levels (".plevel_")
+air_temperature_pl=tk.plevel_th(air_potential_temperature_pl)
+air_potential_temperature_pl=th.plevel_tk(air_temperature_pl:unit=kelvin)
+the_pl=the.plevel_tk_rh(air_temperature_pl:unit=kelvin,relative_humidity_pl:unit=0.01)
+the_pl=the.plevel_th_rh(air_potential_temperature_pl,relative_humidity_pl:unit=0.01)
+
+thesat_pl=thesat.plevel_th(air_potential_temperature_pl)
+thesat_pl=thesat.plevel_tk(air_temperature_pl:unit=kelvin)
+
+relative_humidity_pl=rh.plevel_tk_q(air_temperature_pl:unit=kelvin,specific_humidity_pl)
+relative_humidity_pl=rh.plevel_th_q(air_potential_temperature_pl,specific_humidity_pl)
+
+dew_point_temperature_pl=tdc.plevel_th_q(air_potential_temperature_pl,specific_humidity_pl)
+dew_point_temperature_pl=tdc.plevel_tk_q(air_temperature_pl,specific_humidity_pl)
+dew_point_temperature_pl=tdc.plevel_th_rh(air_potential_temperature_pl,relative_humidity_pl:unit=0.01)
+dew_point_temperature_pl=tdc.plevel_tk_rh(air_temperature_pl,relative_humidity_pl:unit=0.01)
+
+specific_humidity_pl=q.plevel_tk_rh(air_temperature_pl:unit=kelvin,relative_humidity_pl:unit=0.01)
+specific_humidity_pl=q.plevel_th_rh(air_potential_temperature_pl,relative_humidity_pl:unit=0.01)
+
+qvx_pl=qvector.plevel_z_th_xcomp(geopotential_height_pl,air_potential_temperature_pl)
+qvy_pl=qvector.plevel_z_th_ycomp(geopotential_height_pl,air_potential_temperature_pl)
+qvx_pl=qvector.plevel_z_tk_xcomp(geopotential_height_pl,air_temperature_pl:unit=kelvin)
+qvy_pl=qvector.plevel_z_tk_ycomp(geopotential_height_pl,air_temperature_pl:unit=kelvin)
+qvectorx_pl=multiply(qvx_pl,1.e+11)
+qvectory_pl=multiply(qvy_pl,1.e+11)
+qvector.divergence_pl=divergence(qvectorx_pl,qvectory_pl)
+ug_pl=geostrophic.wind.plevel_z_xcomp(geopotential_height_pl)
+vg_pl=geostrophic.wind.plevel_z_ycomp(geopotential_height_pl)
+uag_pl=subtract(x_wind_pl,ug_pl)
+vag_pl=subtract(y_wind_pl,vg_pl)
+gvorticity_pl=geostrophic.vorticity.plevel_z(geopotential_height_pl)
+
+k.index=kindex.plevel_th_rh(air_potential_temperature_pl:level=500hPa,air_potential_temperature_pl:level=700hPa,\
+relative_humidity_pl:level=700hPa:unit=0.01,air_potential_temperature_pl:level=850hPa,\
+relative_humidity_pl:level=850hPa:unit=0.01)
+k.index=kindex.plevel_tk_rh(air_temperature_pl:level=500hPa:unit=kelvin,air_temperature_pl:level=700hPa:unit=kelvin,\
+relative_humidity_pl:level=700hPa:unit=0.01,air_temperature_pl:level=850hPa:unit=kelvin,relative_humidity_pl:level=850hPa:unit=0.01)
+
+showalter.index=showalterindex.plevel_th_rh(air_potential_temperature_pl:level=500hPa,air_potential_temperature_pl:level=850hPa,\
+relative_humidity_pl:level=850hPa:unit=0.01)
+showalter.index=showalterindex.plevel_tk_rh(air_temperature_pl:level=500hPa:unit=kelvin,\
+air_temperature_pl:level=850hPa:unit=kelvin,relative_humidity:unit=0.01_pl:level=850hPa)
+
+boyden.index=boydenindex.plevel_th_z(air_potential_temperature_pl:level=700hPa,\
+geopotential_height_pl:level=700hPa,geopotential_height_pl:level=1000hPa)
+boyden.index=boydenindex.plevel_tk_z(air_temperature_pl:level=700hPa:unit=kelvin,\
+geopotential_height_pl:level=700hPa,geopotential_height_pl:level=1000hPa)
+
+topodiff=subtract(unsmoothed_altitude,altitude)
+topodiff_06=multiply(topodiff,0.006)
+kalman_air_temperature=subtract(tk2m,topodiff_06)
+kalman_air_temperature_celsius=temp_k2c(kalman_air_temperature)
+
+# computations in hybrid/eta/sigma_norlam levels (needs surface_air_pressure) (".hlevel_")
+air_temperature_ml=tk.hlevel_th_psurf(air_potential_temperature_ml,surface_air_pressure:unit=hectopascal)
+air_potential_temperature_ml=th.hlevel_tk_psurf(air_temperature_ml:unit=kelvin,surface_air_pressure:unit=hectopascal)
+
+the_ml=the.hlevel_th_q_psurf(air_potential_temperature_ml,specific_humidity_ml,surface_air_pressure:unit=hectopascal)
+the_ml=the.hlevel_tk_q_psurf(air_temperature_ml:unit=kelvin,specific_humidity_ml,surface_air_pressure:unit=hectopascal)
+
+thesat_ml=thesat.hlevel_th_psurf(air_potential_temperature_ml,surface_air_pressure:unit=hectopascal)
+thesat_ml=thesat.hlevel_tk_psurf(air_temperature_ml:unit=kelvin,surface_air_pressure:unit=hectopascal)
+
+dew_point_temperature_ml=tdc.hlevel_th_q_psurf(air_potential_temperature_ml,specific_humidity_ml,surface_air_pressure:unit=hectopascal)
+dew_point_temperature_ml=tdc.hlevel_tk_q_psurf(air_temperature_ml:unit=kelvin,specific_humidity_ml,surface_air_pressure:unit=hectopascal)
+dew_point_temperature_ml=tdc.hlevel_th_rh_psurf(air_potential_temperature_ml,relative_humidity_ml:unit=0.01,surface_air_pressure:unit=hectopascal)
+dew_point_temperature_ml=tdc.hlevel_tk_rh_psurf(air_temperature_ml:unit=kelvin,relative_humidity_ml:unit=0.01,surface_air_pressure:unit=hectopascal)
+
+relative_humidity_ml=rh.hlevel_th_q_psurf(air_potential_temperature_ml,specific_humidity_ml,surface_air_pressure:unit=hectopascal)
+relative_humidity_ml=rh.hlevel_tk_q_psurf(air_temperature_ml:unit=kelvin,specific_humidity_ml,surface_air_pressure:unit=hectopascal)
+
+specific_humidity_ml=q.hlevel_th_rh_psurf(air_potential_temperature_ml,relative_humidity_ml:unit=0.01,surface_air_pressure:unit=hectopascal)
+specific_humidity_ml=q.hlevel_tk_rh_psurf(air_temperature_ml:unit=kelvin,relative_humidity_ml:unit=0.01,surface_air_pressure:unit=hectopascal)
+
+air_pressure_ml=pressure.hlevel_xx_psurf(air_potential_temperature_ml,surface_air_pressure:unit=hectopascal)
+air_pressure_ml=pressure.hlevel_xx_psurf(air_temperature_ml:unit=kelvin,surface_air_pressure:unit=hectopascal)
+
+# computations in misc atmospheric level types levels (needs pressure in all levels) (".alevel_")
+air_temperature=tk.alevel_th_p(air_potential_temperature,air_pressure:unit=hectopascal)
+air_potential_temperature=th.alevel_tk_p(air_temperature:unit=kelvin,air_pressure:unit=hectopascal)
+
+the_ml=the.alevel_th_q_p(air_potential_temperature,specific_humidity,air_pressure:unit=hectopascal)
+the_ml=the.alevel_tk_q_p(air_temperature:unit=kelvin,specific_humidity,air_pressure:unit=hectopascal)
+
+thesat=thesat.alevel_th_p(air_potential_temperature,air_pressure:unit=hectopascal)
+thesat=thesat.alevel_tk_p(air_temperature:unit=kelvin,air_pressure:unit=hectopascal)
+
+relative_humidity=rh.alevel_th_q_p(air_potential_temperature,specific_humidity,air_pressure:unit=hectopascal)
+relative_humidity=rh.alevel_tk_q_p(air_temperature:unit=kelvin,specific_humidity,air_pressure:unit=hectopascal)
+
+specific_humidity=q.alevel_th_rh_p(air_potential_temperature,relative_humidity:unit=0.01,air_pressure:unit=hectopascal)
+specific_humidity=q.alevel_tk_rh_p(air_temperature:unit=kelvin,relative_humidity:unit=0.01,air_pressure:unit=hectopascal)
+
+dew_point_temperature=tdc.alevel_th_q_p(air_potential_temperature,specific_humidity,air_pressure:unit=hectopascal)
+dew_point_temperature=tdc.alevel_tk_q_p(air_temperature:unit=kelvin,specific_humidity,air_pressure:unit=hectopascal)
+dew_point_temperature=tdc.alevel_th_rh_p(air_potential_temperature,relative_humidity:unit=0.01,air_pressure:unit=hectopascal)
+dew_point_temperature=tdc.alevel_tk_rh_p(air_temperature:unit=kelvin,relative_humidity:unit=0.01,air_pressure:unit=hectopascal)
+
+# computations in isentropic levels (".ilevel_")
+ug_pl,vg_pl=geostrophic_wind.ilevel_mpot(montgomery.potential_pl)
+
+# level independent computations, including surface
+
+x_wind_10m=equivalent_to(u_wind_10m)
+y_wind_10m=equivalent_to(v_wind_10m)
+x_wind=equivalent_to(u_wind)
+y_wind=equivalent_to(v_wind)
+air_pressure_at_sea_level=equivalent_to(sea_level_pressure:unit=hectopascal)
+accumprecip.6h_mean=equivalent_to(precipitation_amount_acc_6h)
+
+air_temperature_2m=temp_k2c(tk2m)
+air_temperature_0m=temp_k2c(tk0m)
+soil_temperature=temp_k2c(tksoil)
+surface_temperature_where_land=temp_k2c(tk2mland) 
+
+tdk2m=tdk.tk_rh(tk2m,relative_humidity_2m)
+tdc2m=tdc.tk_rh(tk2m,relative_humidity_2m)
+tdc2m=tdc.tk_rh(air_temperature_2m:unit=kelvin,relative_humidity_2m:unit=0.01)
+
+relative_humidity_2m=rh.tk_tdk(tk2m,tdk2m)
+#relative_humidity_2m=rh.tc_tdc(tc2m,tdc2m)
+
+tfp1_pl=thermal.front.parameter_tx(air_temperature_pl:unit=kelvin)
+tfp_pl=multiply(tfp1_pl,1.e+11)
+tfp1_ml=thermal.front.parameter_tx(air_temperature_ml:unit=kelvin)
+tfp_ml=multiply(tfp1_ml,1.e+11)
+
+sea_surface_temperature=equivalent_to(air_temperature_0m)  
+
+climatological_deep_soil_temperature=temp_k2c(tksc.param)
+
+pressure.tendency=field.diff.forecast.hour(surface_air_pressure:unit=hectopascal,-3,0)
+pressure.tendency=field.diff.forecast.hour(mslp,-3,0)
+pressure.tendency=field.diff.forecast.hour(air_pressure_at_sea_level:unit=hectopascal,-3,0)
+
+precipitation_amount_acc=add(lwe_thickness_of_stratiform_precipitation_amount,lwe_thickness_of_convective_precipitation_amount)  
+precipitation_amount_acc=add(lwe_thickness_of_large_scale_precipitation_amount,lwe_thickness_of_convective_precipitation_amount) 
+lwe_thickness_of_stratiform_precipitation_amount=add(lwe_thickness_of_stratiform_snowfall_amount,stratiform_rainfall_amount)
+lwe_thickness_of_convective_precipitation_amount=add(lwe_thickness_of_convective_snowfall_amount,convective_rainfall_amount)
+lwe_thicknes_of_snowfall_amount_acc=add(lwe_thickness_of_stratiform_snowfall_amount,lwe_thickness_of_convective_snowfall_amount)
+totalrain=add(stratiform_rainfall_amount,convective_rainfall_amount)
+totalrain=subtract(precipitation_amount_acc,lwe_thicknes_of_snowfall_amount_acc)
+stratiform_rainfall_amount=subtract(lwe_thickness_of_stratiform_precipitation_amount,lwe_thickness_of_stratiform_snowfall_amount)
+convective_rainfall_amount=subtract(lwe_thickness_of_convective_precipitation_amount,lwe_thickness_of_convective_snowfall_amount)
+
+#  precipitation - adding precipitation rates
+accumprecip.1h=equivalent_to(lwe_precipitation_rate)
+accumprecip.3h=sum_of_forecast_hours(lwe_precipitation_rate,-2,-1,0)
+accumprecip.6h=sum_of_forecast_hours(lwe_precipitation_rate,-5,-4,-3,-2,-1,0)
+accumprecip.12h=sum_of_forecast_hours(lwe_precipitation_rate,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+accumprecip.24h=sum_of_forecast_hours(lwe_precipitation_rate,-23,-22,-21,-20,-19,-18,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+accumprecip.18h=sum_of_forecast_hours(lwe_precipitation_rate,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+accumprecip.36h=sum_of_forecast_hours(lwe_precipitation_rate,-35,-34,-33,-32,-31,-30,-29,-28,-27,-26,-25,-24,-23,-22,-21,-20,-19,-18,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+
+accumprecip.3h=equivalent_to(total_precipitation)
+accumprecip.6h=sum_of_forecast_hours(total_precipitation,-3,0)
+accumprecip.12h=sum_of_forecast_hours(total_precipitation,-9,-6,-3,0)
+accumprecip.24h=sum_of_forecast_hours(total_precipitation,-21,-18,-15,-12,-9,-6,-3,0)
+
+accumprecip.6h=equivalent_to(precipitation_amount_acc_6h)
+accumprecip.12h=sum_of_forecast_hours(precipitation_amount_acc_6h,-6,0)
+accumprecip.24h=sum_of_forecast_hours(precipitation_amount_acc_6h,-18,-12,-6,0)
+accumprecip.36h=sum_of_forecast_hours(precipitation_amount_acc_6h,-30,-24,-18,-12,-6,0)
+
+accumprecip.3h=sum_of_forecast_hours(uk_precip3h,0)
+accumprecip.6h=sum_of_forecast_hours(uk_precip3h,-3,0)
+accumprecip.12h=sum_of_forecast_hours(uk_precip3h,-9,-6,-3,0)
+accumprecip.18h=sum_of_forecast_hours(uk_precip3h,-15,-12,-9,-6,-3,0)
+accumprecip.24h=sum_of_forecast_hours(uk_precip3h,-21,-18,-15,-12,-9,-6,-3,0)
+
+accumprecip.1h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-1,0)
+accumprecip.3h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-3,0)
+accumprecip.6h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-6,0)
+accumprecip.12h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-12,0)
+accumprecip.18h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-18,0)
+accumprecip.24h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-24,0)
+accumprecip.36h=accum.diff.forecast.hour(precipitation_amount_acc:unit=kg/m2,-36,0)
+
+accumfrontalprecip.1h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-1,0)
+accumfrontalprecip.3h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-3,0)
+accumfrontalprecip.6h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-6,0)
+accumfrontalprecip.12h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-12,0)
+accumfrontalprecip.18h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-18,0)
+accumfrontalprecip.24h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-24,0)
+accumfrontalprecip.36h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_precipitation_amount,-36,0)
+
+accumconvecprecip.1h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-1,0)
+accumconvecprecip.3h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-3,0)
+accumconvecprecip.6h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-6,0)
+accumconvecprecip.12h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-12,0)
+accumconvecprecip.18h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-18,0)
+accumconvecprecip.24h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-24,0)
+accumconvecprecip.36h=accum.diff.forecast.hour(lwe_thickness_of_convective_precipitation_amount,-36,0)
+
+accumsnow_total_water.1h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-1,0)
+accumsnow_total_water.3h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-3,0)
+accumsnow_total_water.6h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-6,0)
+accumsnow_total_water.12h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-12,0)
+accumsnow_total_water.18h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-18,0)
+accumsnow_total_water.24h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-24,0)
+accumsnow_total_water.36h=accum.diff.forecast.hour(lwe_thickness_of_snowfall_amount_acc,-36,0)
+
+totalrain.1h=accum.diff.forecast.hour(totalrain,-1,0)
+totalrain.3h=accum.diff.forecast.hour(totalrain,-3,0)
+totalrain.6h=accum.diff.forecast.hour(totalrain,-6,0)
+totalrain.12h=accum.diff.forecast.hour(totalrain,-12,0)
+totalrain.18h=accum.diff.forecast.hour(totalrain,-18,0)
+totalrain.24h=accum.diff.forecast.hour(totalrain,-24,0)
+totalrain.36h=accum.diff.forecast.hour(totalrain,-36,0)
+
+accumrain_stratiform.1h=accum.diff.forecast.hour(stratiform_rainfall_amount,-1,0)
+accumrain_stratiform.3h=accum.diff.forecast.hour(stratiform_rainfall_amount,-3,0)
+accumrain_stratiform.6h=accum.diff.forecast.hour(stratiform_rainfall_amount,-6,0)
+accumrain_stratiform.12h=accum.diff.forecast.hour(stratiform_rainfall_amount,-12,0)
+accumrain_stratiform.18h=accum.diff.forecast.hour(stratiform_rainfall_amount,-18,0)
+accumrain_stratiform.24h=accum.diff.forecast.hour(stratiform_rainfall_amount,-24,0)
+accumrain_stratiform.36h=accum.diff.forecast.hour(stratiform_rainfall_amount,-36,0)
+
+accumrain_convective.1h=accum.diff.forecast.hour(convective_rainfall_amount,-1,0)
+accumrain_convective.3h=accum.diff.forecast.hour(convective_rainfall_amount,-3,0)
+accumrain_convective.6h=accum.diff.forecast.hour(convective_rainfall_amount,-6,0)
+accumrain_convective.12h=accum.diff.forecast.hour(convective_rainfall_amount,-12,0)
+accumrain_convective.18h=accum.diff.forecast.hour(convective_rainfall_amount,-18,0)
+accumrain_convective.24h=accum.diff.forecast.hour(convective_rainfall_amount,-24,0)
+accumrain_convective.36h=accum.diff.forecast.hour(convective_rainfall_amount,-36,0)
+
+accumsnow_stratiform_water.1h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-1,0)
+accumsnow_stratiform_water.3h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-3,0)
+accumsnow_stratiform_water.6h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-6,0)
+accumsnow_stratiform_water.12h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-12,0)
+accumsnow_stratiform_water.18h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-18,0)
+accumsnow_stratiform_water.24h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-24,0)
+accumsnow_stratiform_water.36h=accum.diff.forecast.hour(lwe_thickness_of_stratiform_snowfall_amount,-36,0)
+
+accumsnow_convective_water.1h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-1,0)
+accumsnow_convective_water.3h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-3,0)
+accumsnow_convective_water.6h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-6,0)
+accumsnow_convective_water.12h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-12,0)
+accumsnow_convective_water.18h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-18,0)
+accumsnow_convective_water.24h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-24,0)
+accumsnow_convective_water.36h=accum.diff.forecast.hour(lwe_thickness_of_convective_snowfall_amount,-36,0)
+
+#
+precip.3h.median=sum_of_forecast_hours(precipitation_amount_middle_estimate,-2,-1,0)
+precip.6h.median=sum_of_forecast_hours(precipitation_amount_middle_estimate,-5,-4,-3,-2,-1,0)
+precip.12h.median=sum_of_forecast_hours(precipitation_amount_middle_estimate,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+precip.18h.median=sum_of_forecast_hours(precipitation_amount_middle_estimate,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+precip.18h.median=sum_of_forecast_hours(precipitation_amount_middle_estimate,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+precip.24h.median=sum_of_forecast_hours(precipitation_amount_middle_estimate,-23,-22,-21,-20,-19,-18,-17,-16,-15,-14,-13,-12,-11,-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,0)
+
+#
+precipitation_amount_acc_6h_mean=accum.diff.forecast.hour(precipitation_amount_acc_mean,-6,0)
+precipitation_amount_acc_6h_stddev=accum.diff.forecast.hour(precipitation_amount_acc_stddev,-6,0)
+precipitation_amount_acc_6h_stddevrel=divide(accumprecip.6h_stddev,accumprecip.6h_mean)
+
+#..........................................the 3 last constants: precipMin,snowRateMax,tMax(C)
+danger.undercooled.rain=undercooled.rain(accumprecip.3h,accumsnow_total_water.3h,tk0m,0.2,0.08,0.0)
+danger.undercooled.rain=undercooled.rain(accumprecip.3h,accumsnow_total_water.3h,air_temperature_0m:unit=kelvin,0.2,0.08,0.0)
+
+dz.500-1000=subtract(geopotential_height_pl:level=500hPa,geopotential_height_pl:level=1000hPa)
+dz.700-1000=subtract(geopotential_height_pl:level=700hPa,geopotential_height_pl:level=1000hPa)
+dz.850-1000=subtract(geopotential_height_pl:level=850hPa,geopotential_heigh_plt:level=1000hPa)
+dz.500-925=subtract(geopotential_height_pl:level=500hPa,geopotential_height_pl:level=925hPa)
+dz.700-925=subtract(geopotential_height_pl:level=700hPa,geopotential_height_pl:level=925hPa)
+dz.500-850=subtract(geopotential_height_pl:level=500hPa,geopotential_height_pl:level=850hPa)
+dz.300-700=subtract(geopotential_height_pl:level=300hPa,geopotential_height_pl:level=700hPa)
+
+dz.500-1000_mean=subtract(geopotential_height_pl_mean:level=500hPa,geopotential_height_pl_mean:level=1000hPa)
+dz.500-1000_stddev=subtract(geopotential_height_pl_stddev:level=500hPa,geopotential_height_pl_stddev:level=1000hPa)
+
+peps_t.2max_c=temp_k2c(peps_t.2max)
+peps_t.2min_c=temp_k2c(peps_t.2min)
+
+z.foot.inflight=multiply(z.inflight,3.2808399)
+
+ff.maxwind=vector.abs(x_wind_max,y_wind_max)
+ff.maxwind.knot=vector.abs(x_wind_max:unit=knots,y_wind_max:unit=knots)
+flightlevel.maxwind=pressure2FlightLevel(p_wind_max)
+
+ff.maxwind_low=vector.abs(x_wind_max_low,y_wind_max_low)
+ff.maxwind_low.knot=vector.abs(x_wind_max_low:unit=knots,y_wind_max_low:unit=knots)
+flightlevel.maxwind_low=pressure2FlightLevel(p_wind_max_low)
+
+flightlevel.inflight=pressure2FlightLevel(p.inflight)
+
+flightlevel_theta=pressure2FlightLevel(air_pressure_theta:unit=hectopascal)
+flightlevel_ml=pressure2FlightLevel(air_pressure_ml:unit=hectopascal)
+flightlevel_temp=pressure2FlightLevel(air_pressure_temp:unit=hectopascal)
+flightlevel_pv=pressure2FlightLevel(air_pressure_pv:unit=hectopascal)
+
+fluxs.3h=accum.diff.forecast.hour(surface_upward_sensible_heat_flux_acc,-3,0)
+fluxsens.3h=divide(fluxs.3h,10800)	
+fluxs.6h=accum.diff.forecast.hour(surface_upward_sensible_heat_flux_acc,-6,0)
+fluxsens.6h=divide(fluxs.6h,21600)	
+fluxs.12h=accum.diff.forecast.hour(surface_upward_sensible_heat_flux_acc,-12,0)
+fluxsens.12h=divide(fluxs.12h,43200)	
+
+fluxl.3h=accum.diff.forecast.hour(surface_upward_latent_heat_flux_acc,-3,0)
+fluxlat.3h=divide(fluxl.3h,10800)	
+fluxl.6h=accum.diff.forecast.hour(surface_upward_latent_heat_flux_acc,-6,0)
+fluxlat.6h=divide(fluxl.6h,21600)	
+fluxl.12h=accum.diff.forecast.hour(surface_upward_latent_heat_flux_acc,-12,0)
+fluxlat.12h=divide(fluxl.12h,43200)	
+
+fluxsl.3h=add(fluxsens.3h,fluxlat.3h)	
+fluxsl.6h=add(fluxsens.6h,fluxlat.6h)	
+fluxsl.12h=add(fluxsens.12h,fluxlat.12h)	
+
+air_temperature_pl_celsius=temp_k2c(air_temperature_pl)
+
+vorticity_pl=rel.vorticity(x_wind_pl,y_wind_pl)
+divergence_pl=divergence(x_wind_pl,y_wind_pl)
+absvorticity_pl=abs.vorticity(x_wind_pl,y_wind_pl)
+
+advection.vorticity_pl=advection(vorticity_pl,x_wind_pl,y_wind_pl,24.)
+advection.t_pl=advection(air_temperature_pl,x_wind_pl,y_wind_pl,24.)
+
+vorticity_ml=rel.vorticity(x_wind_ml,y_wind_ml)
+divergence_ml=divergence(x_wind_ml,y_wind_ml)
+absvorticity_ml=abs.vorticity(x_wind_ml,y_wind_ml)
+
+advection.vorticity_ml=advection(vorticity_ml,x_wind_ml,y_wind_ml,24.)
+advection.t_ml=advection(air_temperature_ml,x_wind_ml,y_wind_ml,24.)
+
+vorticity_theta=rel.vorticity(x_wind_theta,y_wind_theta)
+divergence_theta=divergence(x_wind_theta,y_wind_theta)
+absvorticity_theta=abs.vorticity(x_wind_theta,y_wind_theta)
+
+advection.vorticity_theta=advection(vorticity_theta,x_wind_theta,y_wind_theta,24.)
+advection.t_theta=advection(air_temperature_theta,x_wind_theta,y_wind_theta,24.)
+
+dew_point_temperature=tdc.tk_rh(air_temperature:unit=kelvin,relative_humidity:unit=0.01)
+#dew_point_temperature=tdc.tc_rh(air_temperature_celsius,relative_humidity)
+#relative_humidity=rh.tc_tdc(air_temperature_celsius,dew_point_temperature)
+
+the.gradient1_pl=abs.del(the_pl)
+the.gradient1_ml=abs.del(the_ml)
+the.gradient_pl=multiply(the.gradient1_pl,100000.)  # new unit K/100km
+the.gradient_ml=multiply(the.gradient1_ml,100000.)  # new unit K/100km
+
+mfield_pl=momentum.x.coordinate(y_wind_pl,0.2e-4)
+nfield_pl=momentum.y.coordinate(x_wind_pl,0.2e-4)
+jacobian.mn1_pl=jacobian(mfield_pl,nfield_pl)
+jacobian.mn_pl=multiply(jacobian.mn1_pl,1.e+9)
+
+mfield_ml=momentum.x.coordinate(y_wind_ml,0.2e-4)
+nfield_ml=momentum.y.coordinate(x_wind_ml,0.2e-4)
+jacobian.mn1_ml=jacobian(mfield_ml,nfield_ml)
+jacobian.mn_ml=multiply(jacobian.mn1_ml,1.e+9)
+
+ff_pl=vector.abs(x_wind_pl,y_wind_pl)
+ff_ml=vector.abs(x_wind_ml,y_wind_ml)
+ff_theta=vector.abs(x_wind_theta,y_wind_theta)
+ff10m=vector.abs(x_wind_10m,y_wind_10m)
+ff.inflight=vector.abs(u.inflight,v.inflight)
+
+ffknots_pl=vector.abs(x_wind_pl:units=knots,y_wind_pl:units=knots)
+ffknots_ml=vector.abs(x_wind_ml:unit=knots,y_wind_ml:unit=knots)
+ffknots_theta=vector.abs(x_wind_theta:unit=knots,y_wind_theta:unit=knots)
+ff10mknots=vector.abs(x_wind_10m:units=knots,y_wind_10m:units=knots)
+
+windcooling=windcooling_tk_u_v(tk2m,x_wind_10m,y_wind_10m)
+windcooling=windcooling_tk_u_v(air_temperature_2m:unit=kelvin,x_wind_10m,y_wind_10m)
+windcooling=windcooling_tk_u_v(air_temperature_2m:unit=kelvin,x_wind_10m,y_wind_10m)
+
+thediff.850-925=subtract(the_pl:level=850hPa,the_pl:level=925hPa)
+thediff.700-925=subtract(the_pl:level=700hPa,the_pl:level=925hPa)
+thediff.500-925=subtract(the_pl:level=500hPa,the_pl:level=925hPa)
+thediff.700-850=subtract(the_pl:level=700hPa,the_pl:level=850hPa)
+thediff.500-850=subtract(the_pl:level=500hPa,the_pl:level=850hPa)
+
+tdiff.sst-500=subtract(sea_surface_temperature:unit=kelvin,air_temperature_pl:level=500hPa)
+tdiff.1000-sst=subtract(air_temperature_pl:level=1000hPa,sea_surface_temperature:unit=kelvin)
+tdiff.500-1000=subtract(air_temperature_pl:level=500hPa,air_temperature_pl:level=1000hPa)
+tdiff.500-850=subtract(air_temperature_pl:level=500hPa,air_temperature_pl:level=850hPa)
+
+tcmean.500-1000=tcmean.plevel_z1_z2(geopotential_height:level=500hPa,geopotential_height:level=1000hPa)
+
+#Icing - based on ff10m*(-1.7-tc2m)/(1+0.3*(sea_surface_temperature+1.7))   - Overland (1990)
+vessel_icing_mertins=vessel.icing.mertins(air_temperature_2m:unit=celsius,sea_surface_temperature:unit=celsius,x_wind_10m,y_wind_10m,-1.7)
+vessel_icing_overland=vessel.icing.overland(air_temperature_2m:unit=kelvin,sea_surface_temperature:unit=kelvin,x_wind_10m,y_wind_10m,-1.7)
+
+windcooling_minus=subtract(0,windcooling) 
+
+#2m wetbulb temp from `1/3 rule`
+
+#tctd=subtract(tc2m,tdc2m)
+tctd=subtract(air_temperature_2m:unit=celsius,tdc2m)
+tctd3=divide(tctd,3)
+wetbulb3=subtract(tc2m,tctd3)
+wetbulb3=subtract(air_temperature_2m:unit=celsius,tctd3)
+
+#total.totals, do not work with milib
+total.totals.1=add(air_temperature_pl:unit=celsius,dew_point_temperature_pl)
+total.totals.2=multiply(air_temperature_pl:unit=celsius,2.0)
+total.totals=subtract(total.totals.1:level=850hPa,total.totals.2:level=500hPa)
+
+#Tzoneforecast=dz*9.81/(287*ln(1000/700))-273 = dz*0.09583287318-273  /From Eirik Samuelsen, implemented by Gjermund Mamen Haugen
+Tzoneforecast_kelvin = multiply(dz.700-1000,0.09583287318)
+Tzoneforecast=temp_k2c(Tzoneforecast_kelvin)
+
+tke_sqrt_pl=power(turbulent_kinetic_energy_pl,0.5)
+
+# for ocean model fields
+current.speed=vector.abs(x_velocity,y_velocity)
+current.speed=vector.abs(x_sea_water_velocity:standard_name,y_sea_water_velocity:standard_name)
+average.current.speed=vector.abs(x_btrop_velocity,y_btrop_velocity)
+average.current.speed=vector.abs(barotropic_sea_water_x_velocity:standard_name,barotropic_sea_water_y_velocity:standard_name)
+stress=vector.abs(x_stress,y_stress)
+
+# for ocean model fields in z levels (".ozlevel_")
+sea.soundspeed=sea.soundspeed.ozlevel_tc_salt(seatemp.c,salinity)
+sea.soundspeed=sea.soundspeed.ozlevel_tk_salt(seatemp.k,salinity)
+sea.soundspeed=sea.soundspeed.ozlevel_tk_salt(sea_water_potential_temperature:standard_name:unit=kelvin,salinity)
+ice.speed=vector.abs(x_ice_velocity,y_ice_velocity)
+
+# SNAP
+total.dep=add(dry.dep,wet.dep)
+accum.total.dep=add(accum.dry.dep,accum.wet.dep)
+mass.above.bl.instant=subtract(100.,mass.in.bl.instant)
+mass.above.bl.average=subtract(100.,mass.in.bl.average)
+bomb.total.dep=add(bomb.dry.dep,bomb.wet.dep)
+bomb.accum.total.dep=add(bomb.accum.dry.dep,bomb.accum.wet.dep)
+
+# OSISAF (som felt)
+sea_ice_concentration_classes=values2classes(sea_ice_concentration,0.0,0.1,19.9,39.9,59.9,79.9,99.9,999.)
+
+# Sesong-varsler
+t.2m.season_c=temp_k2c(t.2m.season)
+
+# DZ(850-1000).boyden
+dz.boyden.1=divide(geopotential_height_pl,30)
+dz.boyden.2=multiply(dz.boyden.1,29)
+dz.850-1000.boyden=subtract(geopotential_height_pl:level=850hPa,dz.boyden.2:level=1000hPa)
+
+# WDB
+mslp=divide(mslp.pa,100)
+lwe_precipitation_rate=multiply(accumprecip.1h.m.proff,1000)
+accumprecip=multiply(accumprecip.m,1000)
+cloud_area_fraction=multiply(totcloud.ratio,100)
+
+# icing
+icing.height.scaled=multiply(icing_height,0.001)
+icing.bottom.scaled=multiply(icing_height_bottom,0.001)
+icing.top.scaled=multiply(icing_height_top,0.001)
+
+# contrails
+cont.bottom.scaled=multiply(cont.bottom,0.001)
+cont.top.scaled=multiply(cont.top,0.001)
+
+
+#precipitation percentiles
+precipitation_percentile_1h_20=percentile(lwe_precipitation_rate,20,7)
+precipitation_percentile_1h_50=percentile(lwe_precipitation_rate,50,7)
+precipitation_percentile_1h_90=percentile(lwe_precipitation_rate,90,7)
+
+precipitation_percentile_1h_20=percentile(accumprecip.1h,20,7)
+precipitation_percentile_1h_50=percentile(accumprecip.1h,50,7)
+precipitation_percentile_1h_80=percentile(accumprecip.1h,80,7)
+
+precipitation_percentile_3h_20=percentile(accumprecip.3h,20,7)
+precipitation_percentile_3h_50=percentile(accumprecip.3h,50,7)
+precipitation_percentile_3h_80=percentile(accumprecip.3h,80,7)
+
+precipitation_percentile_6h_20=percentile(accumprecip.6h,20,7)
+precipitation_percentile_6h_50=percentile(accumprecip.6h,50,7)
+precipitation_percentile_6h_80=percentile(accumprecip.6h,80,7)
+
+precipitation_percentile_12h_20=percentile(accumprecip.12h,20,7)
+precipitation_percentile_12h_50=percentile(accumprecip.12h,50,7)
+precipitation_percentile_12h_80=percentile(accumprecip.12h,80,7)
+
+precipitation_percentile_24h_20=percentile(accumprecip.24h,20,7)
+precipitation_percentile_24h_50=percentile(accumprecip.24h,50,7)
+precipitation_percentile_24h_80=percentile(accumprecip.24h,80,7)
+
+# sum concentration classes 
+aerosol_conc=sum(aerosol_conc_class0:unit=Bq*h/m3,aerosol_conc_class1:unit=Bq*h/m3,aerosol_conc_class2:unit=Bq*h/m3,aerosol_conc_class3:unit=Bq*h/m3,aerosol_conc_class4:unit=Bq*h/m3,aerosol_conc_class5:unit=Bq*h/m3,aerosol_conc_class6:unit=Bq*h/m3,aerosol_conc_class7:unit=Bq*h/m3,aerosol_conc_class8:unit=Bq*h/m3,aerosol_conc_class9:unit=Bq*h/m3)
+
+# deaccumulate
+deacc_137Cs=accum.diff.forecast.hour(137Cesium_concentration:unit=Bq*h/m3,-1,0)
+deacc_131I=accum.diff.forecast.hour(131Iodine_concentration:unit=Bq*h/m3,-1,0)
+deacc_85Kr=accum.diff.forecast.hour(85Krypton_concentration:unit=Bq*h/m3,-1,0)
+deacc_90Sr=accum.diff.forecast.hour(90Strontium_concentration:unit=Bq*h/m3,-1,0)
+deacc_133Xe=accum.diff.forecast.hour(133Xenon_concentration:unit=Bq*h/m3,-1,0)
+deacc_aerosol_concentration=accum.diff.forecast.hour(aerosol_conc:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class0=accum.diff.forecast.hour(aerosol_conc_class0:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class1=accum.diff.forecast.hour(aerosol_conc_class1:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class2=accum.diff.forecast.hour(aerosol_conc_class2:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class3=accum.diff.forecast.hour(aerosol_conc_class3:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class4=accum.diff.forecast.hour(aerosol_conc_class4:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class5=accum.diff.forecast.hour(aerosol_conc_class5:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class6=accum.diff.forecast.hour(aerosol_conc_class6:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class7=accum.diff.forecast.hour(aerosol_conc_class7:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class8=accum.diff.forecast.hour(aerosol_conc_class8:unit=Bq*h/m3,-1,0)
+deacc_aerosol_conc_class9=accum.diff.forecast.hour(aerosol_conc_class9:unit=Bq*h/m3,-1,0)
+
+# misc
+altitude=divide(surface_geopotential,9.81)
+# renaming
+
+# extracting fields
+cloud.fog=equivalent_to(cloud_area_fraction_in_atmosphere_layer:vcoord=sigma:level=1:unit=0.01)
+cloud.low=equivalent_to(cloud_area_fraction_in_atmosphere_layer:vcoord=sigma:level=0.85:unit=0.01)
+cloud.medium=equivalent_to(cloud_area_fraction_in_atmosphere_layer:vcoord=sigma:level=0.5:unit=0.01)
+cloud.high=equivalent_to(cloud_area_fraction_in_atmosphere_layer:vcoord=sigma:level=0.3:unit=0.01)
+
+#air_temperature_2m=equivalent_to(air_temperature:vcoord=atmosphere_sigma_coordinate:level=1000:unit=celsius)
+ff10m.beaufort.classes=values2classes(ff10m,0,0.2,1.5,3.3,5.4,7.9,10.7,13.8,17.1,20.7,24.4,28.4,32.6,500)
+
+# computations of horizontal wind shear.
+ux=d/dx(x_wind_pl)
+uy=d/dy(x_wind_pl)
+vx=d/dx(y_wind_pl)
+vy=d/dy(y_wind_pl)
+ff2=multiply(ff_pl,ff_pl)
+invff=divide(1,ff2)
+uv=multiply(x_wind_pl,y_wind_pl)
+u2=multiply(x_wind_pl,x_wind_pl)
+v2=multiply(y_wind_pl,y_wind_pl)
+s1=multiply(uv,ux)
+s2=multiply(u2,uy)
+s3=multiply(v2,vx)
+s4=multiply(uv,vy)
+s11=add(s2,s3)
+s12=subtract(s1,s11)
+s13=subtract(s12,s4)
+vindsh=multiply(invff,s13)
+
+#mean values and stddev
+air_pressure_at_sea_level_mean=mean_value(air_pressure_at_sea_level:ecoord=ensemble_member)
+air_pressure_at_sea_level_stddev=stddev(air_pressure_at_sea_level:ecoord=ensemble_member)
+wind_speed_of_gust_mean=mean_value(wind_speed_of_gust:ecoord=ensemble_member)
+wind_speed_of_gust_stddev=stddev(wind_speed_of_gust:ecoord=ensemble_member)
+ff10m_std=stddev(ff10m:ecoord=ensemble_member)
+x_wind_10m_mean=mean_value(x_wind_10m:ecoord=ensemble_member)
+y_wind_10m_mean=mean_value(y_wind_10m:ecoord=ensemble_member)
+geopotential_height_pl_mean=mean_value(geopotential_height_pl:ecoord=ensemble_member)
+geopotential_height_pl_stddev=stddev(geopotential_height_pl:ecoord=ensemble_member)
+
+#Wind_probabilities
+prob_wind>14ms=probability_above(ff10m:ecoord=ensemble_member,13.8)
+prob_wind>17ms=probability_above(ff10m:ecoord=ensemble_member,17.1)
+prob_wind>21ms=probability_above(ff10m:ecoord=ensemble_member,20.7)
+prob_wind>24ms=probability_above(ff10m:ecoord=ensemble_member,24.4)
+prob_wind>28ms=probability_above(ff10m:ecoord=ensemble_member,28.4)
+prob_wind>32ms=probability_above(ff10m:ecoord=ensemble_member,32.6)
+prob_wind>35ms=probability_above(ff10m:ecoord=ensemble_member,35.0)
+prob_wind>40ms=probability_above(ff10m:ecoord=ensemble_member,40.0)
+
+#Wind gust probabilities
+prob_wind_gust>14ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,13.8)
+prob_wind_gust>17ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,17.1)
+prob_wind_gust>21ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,20.7)
+prob_wind_gust>24ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,24.4)
+prob_wind_gust>28ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,28.4)
+prob_wind_gust>33ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,32.6)
+prob_wind_gust>35ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,35.0)
+prob_wind_gust>40ms=probability_above(wind_speed_of_gust:ecoord=ensemble_member,40.0)
+
+#Precipitation_probabilities 6h
+prob_accumprecip.6h>0.1mm=probability_above(accumprecip.6h:ecoord=ensemble_member,0.1)
+prob_accumprecip.6h>0.5mm=probability_above(accumprecip.6h:ecoord=ensemble_member,0.5)
+prob_accumprecip.6h>1.0mm=probability_above(accumprecip.6h:ecoord=ensemble_member,1)
+prob_accumprecip.6h>2.5mm=probability_above(accumprecip.6h:ecoord=ensemble_member,2.5)
+prob_accumprecip.6h>5.0mm=probability_above(accumprecip.6h:ecoord=ensemble_member,5)
+prob_accumprecip.6h>7.5mm=probability_above(accumprecip.6h:ecoord=ensemble_member,7.5)
+prob_accumprecip.6h>10mm=probability_above(accumprecip.6h:ecoord=ensemble_member,10)
+prob_accumprecip.6h>15mm=probability_above(accumprecip.6h:ecoord=ensemble_member,15)
+prob_accumprecip.6h>20mm=probability_above(accumprecip.6h:ecoord=ensemble_member,20)
+prob_accumprecip.6h>25mm=probability_above(accumprecip.6h:ecoord=ensemble_member,25)
+prob_accumprecip.6h>30mm=probability_above(accumprecip.6h:ecoord=ensemble_member,30)
+prob_accumprecip.6h>40mm=probability_above(accumprecip.6h:ecoord=ensemble_member,40)
+prob_accumprecip.6h>50mm=probability_above(accumprecip.6h:ecoord=ensemble_member,50)
+prob_accumprecip.6h>100mm=probability_above(accumprecip.6h:ecoord=ensemble_member,100)
+
+#Precipitation_probabilities 12h
+prob_accumprecip.12h>0.1mm=probability_above(accumprecip.12h:ecoord=ensemble_member,0.1)
+prob_accumprecip.12h>0.5mm=probability_above(accumprecip.12h:ecoord=ensemble_member,0.5)
+prob_accumprecip.12h>1.0mm=probability_above(accumprecip.12h:ecoord=ensemble_member,1)
+prob_accumprecip.12h>2.5mm=probability_above(accumprecip.12h:ecoord=ensemble_member,2.5)
+prob_accumprecip.12h>5.0mm=probability_above(accumprecip.12h:ecoord=ensemble_member,5)
+prob_accumprecip.12h>10mm=probability_above(accumprecip.12h:ecoord=ensemble_member,10)
+prob_accumprecip.12h>20mm=probability_above(accumprecip.12h:ecoord=ensemble_member,20)
+prob_accumprecip.12h>30mm=probability_above(accumprecip.12h:ecoord=ensemble_member,30)
+prob_accumprecip.12h>40mm=probability_above(accumprecip.12h:ecoord=ensemble_member,40)
+prob_accumprecip.12h>50mm=probability_above(accumprecip.12h:ecoord=ensemble_member,50)
+prob_accumprecip.12h>100mm=probability_above(accumprecip.12h:ecoord=ensemble_member,100)
+prob_accumprecip.12h>150mm=probability_above(accumprecip.12h:ecoord=ensemble_member,150)
+
+#Precipitation_probabilities 24h
+prob_accumprecip.24h>0.1mm=probability_above(accumprecip.24h:ecoord=ensemble_member,0.1)
+prob_accumprecip.24h>0.5mm=probability_above(accumprecip.24h:ecoord=ensemble_member,0.5)
+prob_accumprecip.24h>1.0mm=probability_above(accumprecip.24h:ecoord=ensemble_member,1)
+prob_accumprecip.24h>2.5mm=probability_above(accumprecip.24h:ecoord=ensemble_member,2.5)
+prob_accumprecip.24h>5.0mm=probability_above(accumprecip.24h:ecoord=ensemble_member,5)
+prob_accumprecip.24h>10mm=probability_above(accumprecip.24h:ecoord=ensemble_member,10)
+prob_accumprecip.24h>20mm=probability_above(accumprecip.24h:ecoord=ensemble_member,20)
+prob_accumprecip.24h>30mm=probability_above(accumprecip.24h:ecoord=ensemble_member,30)
+prob_accumprecip.24h>40mm=probability_above(accumprecip.24h:ecoord=ensemble_member,40)
+prob_accumprecip.24h>50mm=probability_above(accumprecip.24h:ecoord=ensemble_member,50)
+prob_accumprecip.24h>100mm=probability_above(accumprecip.24h:ecoord=ensemble_member,100)
+prob_accumprecip.24h>150mm=probability_above(accumprecip.24h:ecoord=ensemble_member,150)
+prob_accumprecip.24h>200mm=probability_above(accumprecip.24h:ecoord=ensemble_member,200)
+
+#T2M_probabilities
+prob_t2m>+1=probability_above(air_temperature_2m:ecoord=ensemble_member,1)
+prob_t2m>+2=probability_above(air_temperature_2m:ecoord=ensemble_member,2)
+prob_t2m>+3=probability_above(air_temperature_2m:ecoord=ensemble_member,3)
+prob_t2m>+5=probability_above(air_temperature_2m:ecoord=ensemble_member,5)
+prob_t2m>+10=probability_above(air_temperature_2m:ecoord=ensemble_member,10)
+prob_t2m>+15=probability_above(air_temperature_2m:ecoord=ensemble_member,15)
+prob_t2m>+20=probability_above(air_temperature_2m:ecoord=ensemble_member,20)
+prob_t2m>+25=probability_above(air_temperature_2m:ecoord=ensemble_member,25)
+prob_t2m>+30=probability_above(air_temperature_2m:ecoord=ensemble_member,30)
+
+prob_t2m<0=probability_below(air_temperature_2m:ecoord=ensemble_member,0)
+prob_t2m<-1=probability_below(air_temperature_2m:ecoord=ensemble_member,-1)
+prob_t2m<-2=probability_below(air_temperature_2m:ecoord=ensemble_member,-2)
+prob_t2m<-3=probability_below(air_temperature_2m:ecoord=ensemble_member,-3)
+prob_t2m<-5=probability_below(air_temperature_2m:ecoord=ensemble_member,-5)
+prob_t2m<-10=probability_below(air_temperature_2m:ecoord=ensemble_member,-10)
+prob_t2m<-15=probability_below(air_temperature_2m:ecoord=ensemble_member,-15)
+prob_t2m<-20=probability_below(air_temperature_2m:ecoord=ensemble_member,-20)
+prob_t2m<-25=probability_below(air_temperature_2m:ecoord=ensemble_member,-25)
+prob_t2m<-30=probability_below(air_temperature_2m:ecoord=ensemble_member,-30)
+prob_t2m<-35=probability_below(air_temperature_2m:ecoord=ensemble_member,-35)
+prob_t2m<-40=probability_below(air_temperature_2m:ecoord=ensemble_member,-40)
+prob_t2m<-45=probability_below(air_temperature_2m:ecoord=ensemble_member,-45)
+</FIELD_COMPUTE>
+
+
+<FIELD_PLOT>
+
+################### NWP models ##################################
+
+
+##### surface etc. ##########
+
+field=MSLP
+      colour=blue linetype=solid linewidth=1 line.interval=5. unit=hectopascal
+      plot=CONTOUR(air_pressure_at_sea_level:standard_name)
+end.field
+
+field=T
+      colour=red line.interval=2. 
+      plot=CONTOUR(air_temperature_c)
+end.field
+
+field=TH
+      colour=red line.interval=2. 
+      plot=CONTOUR(air_potential_temperature)
+end.field
+
+field=WIND
+      colour=red linetype=solid linewidth=1 rel.size=1. density=AUTO
+      plot=WIND(x_wind,y_wind)
+end.field
+
+
+field=FF
+      plot=CONTOUR(ff)
+end.field
+ 
+field=FF.Beaufort
+      line.values=16.5,21.5,27.5,33.5,40.5,47.5,55.5,63.5
+      plot=CONTOUR(ffknots)
+end.field 
+
+
+loop [HR]=1,3,6,12,24,36
+loop [LINE] = "0.1,0.2,0.5,1,2,4,6,10,15,...40","0.2,0.5,1,2,4,6,10,15,...80",\
+"0.5,1,2,4,6,10,15,...100","1,2,4,6,10,15,...200",\
+"0.5,1,2,4,6,10,15,...300","0.5,1,2,4,6,10,15,...70,80,...400"
+
+field=Precipitation.[HR]h
+      colour=red linetype=solid linewidth=1 line.values=[LINE]
+      plot=CONTOUR(accumprecip.[HR]h)
+end.field
+
+</FIELD_PLOT>
+
+<FIELD_VERTICAL_COORDINATES>
+name=atmosphere_hybrid_sigma_pressure_coordinate_1 vc_type=hybrid levelprefix=E. 
+name=pressure vc_type=pressure levelsuffix=hPa \
+derivedzaxis=flightlevel 
+name=pv vc_type=other levelsuffix=pvu 
+name=temperature vc_type=other levelsuffix=C 
+name=theta vc_type=isentropic levelsuffix=K 
+name=height vc_type=oceandepth levelsuffix=m
+</FIELD_VERTICAL_COORDINATES>
+
+  
+
+<FIELD_FILES>
+
+#-------------------------------------------------------------------------------
+#  m=NAME t=fimex format=netcdf|grib|ncml|wdb|metnofieldfile  f=filename|database-config|http
+#-------------------------------------------------------------------------------
+
+
+filegroup=Hirlam
+m=hirlam24km t=fimex format=netcdf \
+f=$(OPDATA)/hirlam12/hirlam12ml.nc \
+f=$(OPDATA)/hirlam12/hirlam12pl.nc 
+
+m=hirlam12km t=fimex format=netcdf \
+f=$(OPDATA)/hirlam12/hirlam12sf-1h.nc \
+f=$(OPDATA)/hirlam12/hirlam12sf-3h.nc 
+
+
+</FIELD_FILES>
+
+
+
+<OBSERVATION_FILES>
+
+PROD=synop:Synop
+bufr=$(OPDATA)/bufr/syno_[yyyymmddHH].bufr
+timerange=-30,30
+
+PROD=metar:Metar
+bufr=$(OPDATA)/bufr/meta_[yyyymmddHHMM].bufr
+timerange=-15,15
+
+PROD=dribu:Dribu
+bufr=$(OPDATA)/bufr/drau_yyyymmddHH.bufr
+timerange=-90,90
+
+PROD=temp:Temp
+bufr=$(OPDATA)/bufr/temp_yyyymmddHH.bufr
+imerange=-30,30
+
+</OBSERVATION_FILES>
+
+<IMAGE>
+
+image=geotiff
+channels=RGB
+ formattype=geotiff
+sub.type=ch5
+file=$(OPDATA)/geotiff/met09_yyyymmddHHMM_eurol_bw_ch5.tif 
+sub.type=ch6
+file=$(OPDATA)/geotiff/met09_yyyymmddHHMM_eurol_bw_ch6.tif
+sub.type=ch9
+file=$(OPDATA)/geotiff/met09_yyyymmddHHMM_eurol_bw_ch9.tif 
+sub.type=overview
+file=$(OPDATA)/geotiff/met09_yyyymmddHHMM_eurol_rgb_hr_overview.tif
+sub.type=nightfog
+file=$(OPDATA)/geotiff/met09_yyyymmddHHMM_eurol_rgb_nightfog.tif
+</IMAGE>
+
+
+<TEXT_INFORMATION_FILES>
+
+#---------------------------------------------------------------------------
+# Simple ascii-text (+ subset of xml and html) files with information
+# Available in Diana in separate text-viewer
+#
+# name=XX file=YY [ type=auto|text|html|xml font=auto|fixed ]
+#
+# Keys: name and file are mandatory
+# - type=auto means type is determined from filename extension
+#   (unknown extension: type is "text/plain")
+# - font=fixed means "courier"-type font
+#---------------------------------------------------------------------------
+
+name=Obsflagg       file=$(share_diana_dir)/obsflag.html
+
+</TEXT_INFORMATION_FILES>
+
+
+<MAP_AREA>
+
+#---------------------------------------------------------------------------
+#name=NAME proj4string="+proj=..." rectangle=x1:x2:y1:y2
+#name=Norway[F6]..... defines key F6 as shortcommand key for area Norway.
+#---------------------------------------------------------------------------
+
+name=Data-area proj4string=undefined
+name=Europa  proj4string="+proj=stere +lat_ts=60 +lat_0=90.0 +lon_0=0 +x_0=5.71849e+06 +y_0=7.37385e+06 +R=6.371e+06"  rectangle=2.50e+06:9.02e+06:2.20e+06:6.67e+06
+     
+name=proj_ortho_north  proj4string="+proj=ortho +lon_0=0 +lat_0=90 +a=6371000.0 +b=6371000.0" rectangle=-6e+06:5e+06:-6.3e+06:8.5e+06
+
+name=proj_hirlam proj4string="+proj=ob_tran +o_proj=eqc +lon_0=0 +o_lat_p=25 +x_0=5.14744e+06 +y_0=4.03549e+06 +a=6371000.0 +b=6371000.0"  rectangle=-8000:1e+07:-8000:1e+07
+
+name=proj_bonne  proj4string="+proj=bonne +lat_1=40 +a=6371000.0 +b=6371000.0" rectangle=-2e+07:1.1e+07:-1.5e+07:1.2e+07
+
+name=proj_van_der_grinten  proj4string="+proj=vandg +a=6371000.0 +b=6371000.0" rectangle=-2e+07:2e+07:-2e+07:2e+07
+
+
+name=proj_eqc proj4string="+proj=eqc +x_0=3.22465e+06 +y_0=-3.44704e+06 +a=6371000.0 +b=6371000.0" rectangle=-2e+07:2e+07:-1.5e+07:6e+06
+
+
+name=proj_obtran proj4string="+proj=ob_tran +o_proj=eqc +lon_0=0 +o_lat_p=25 +x_0=5.14744e+06 +y_0=4.03549e+06 +a=6371000.0 +b=6371000.0" rectangle=-1.5e+07:2.5e+07:-1.5e+07:1.3e+07
+
+
+name=proj_lambert proj4string=" +proj=lcca +lat_0=45 +lon_0=35 +x_0=229966 +y_0=215145 +a=6.371e+06 +b=6.371e+06" rectangle=-2e+07:2e+07:-1.5e+07:6e+06
+
+name=EPSG-4326 proj4string=" +proj=longlat +datum=WGS84 +no_defs" \
+rectangle=-3.14:3.14:-1.15:1.5
+
+name=EPSG-32661 proj4string=" +proj=stere +lat_0=90 +lat_ts=90 \
++lon_0=0 +k=0.994 +x_0=2000000 +y_0=2000000 +datum=WGS84 +units=m +no_defs" \
+rectangle=-3e+06:5e+06:-5e+06:3e+06
+
+name=EPSG-32761 proj4string=" +proj=stere +lat_0=-90 +lat_ts=-90 \
++lon_0=0 +k=0.994 +x_0=2000000 +y_0=2000000 +datum=WGS84 +units=m +no_defs" \
+rectangle=-1e+07:1e+07:-1e+07:1e+07
+
+</MAP_AREA>
+
+
+<MAP_TYPE>
+
+ 
+#---------------------------------------------------------------------------
+# Maps are defined with  
+# map=NAME file=FILEPATH type=pland|triangles|lines_simple_text|shape
+# Additional options can span several lines
+# type=pland|triangles|lines_simple_text|shape
+#---------------------------------------------------------------------------
+
+map=Gshhs-Auto type=triangles
+limit=10  file=$(MAPDIR)/gshhs_25.map
+limit=2.5 file=$(MAPDIR)/gshhs_5.map
+limit=0.5 file=$(MAPDIR)/gshhs_1.map
+limit=0.1 file=$(MAPDIR)/gshhs_0.2.map
+limit=0	  file=$(MAPDIR)/gshhs_0.1.map
+contour=on cont.colour=black cont.linetype=solid cont.linewidth=1
+land=on land.colour=flesh
+#
+map=Euro1    type=pland file=$(MAPDIR)/land4.dat    # emep(kyst)
+map=Euro2    type=pland file=$(MAPDIR)/land5.dat    # emep(grenser,elver)
+#
+map=Wvs-Auto type=pland
+limit=5.0 file=$(MAPDIR)/landwvs43m.dat # wvs(1:43mill)
+limit=1.0 file=$(MAPDIR)/landwvs12m.dat # wvs(1:12mill)
+limit=0.5 file=$(MAPDIR)/landwvs3m.dat  # wvs(1:3mill)
+limit=0.1 file=$(MAPDIR)/landwvs1m.dat  # wvs(1:1mill)
+limit=0   file=$(MAPDIR)/landwvs250k.dat# wvs(1:250.000)
+contour=on cont.colour=black cont.linetype=solid cont.linewidth=1
+#
+map=Norden_wgs84 type=shape \
+file=/disk1/tmp/geotiff/shape_geotiff//Norden_wgs84.shp \
+contour=on cont.colour=darkgray cont.linetype=solid cont.linewidth=1 \
+land=on land.colour=darkred
+
+</MAP_TYPE>
+
+
+<OBJECTS>
+
+# the end of filenames are always "year month day hour minute" (.yyyymmddHHMM)
+
+name="met.no SurfaceAnalysis"  file=$(OPDATA)/diana/SurfaceAnalysis/objects/DNMI_ANAdraw
+
+</OBJECTS>
+
+product="MSLP_analysis"
+  # save_dir is input/output
+  local_save_dir= ${HOME}/.diana/work
+#  prod_save_dir=$(OPDATA_PROD)/diana/MSLP_analysis/
+  # other input directories
+#  input_dir=$(OPDATA_PROD)/diana/MSLP_analysis/work
+   template_file=diTemplate.nc
+
+  field=    filenamepart:ANAmslp, plot:MSLP, unit:hectopascal
+  objects=  "ANAdraw"
+  comments= "ANAcomm"
+
+ local_idents= TEST
+# prod_idents=  VA,VV,VNN, DNMI
+
+# commandfile=$(share_diana_dir)/products/bakkeanalyse.txt
+ 
+end.product
+
+
+product="Sigkart"
+  # save_dir is input/output
+  local_save_dir= ${HOME}/.diana/work
+  prod_save_dir=$(/OPDATA)/diana/Sigkart/
+  # other input directories
+  input_dir=$(/OPDATA)/diana/Sigkart/work
+
+  objects=  "SIGdraw"
+  comments= "SIGcomm"
+
+  local_idents= TEST
+  prod_idents= DNMI
+
+  time_start_early= -12:00    # hour:minute (-=before,+=after product)
+  time_start_late=  -04:00
+
+  commandfile=$(share_diana_dir)/products/sigkart.txt
+  commandfile=/home/lisbethb/local/src/diana/share/diana/products/sigkart.txt
+  standard_symbolsize=20
+  complex_symbolsize=5
+#  complex_symbolsize=4
+#  frontlinewidth=5
+
+end.product
+
+
+
+product="Draw"
+  # save_dir is input/output
+  local_save_dir= ${HOME}/.diana/work
+  objects=  "MAPdraw"
+  comments= "MAPcomm"
+  local_idents= TEST
+  standard_symbolsize=30
+end.product
+
+</EDIT_NEW>
+
+<VERTICAL_PROFILE_FILES>
+bufr.temp=  $(OPDATA)/bufr/temp_[yyyymmddHH].bufr
+
+</VERTICAL_PROFILE_FILES>
+
+<VERTICAL_PROFILE_COMPUTATIONS>
+air_temperature_ml=tk_from_th(air_potential_temperature_ml)
+relative_humidity_ml=rh_from_tk_q(air_temperature_ml,specific_humidity_ml)
+relative_humidity_ml=rh_from_th_q(air_potential_temperature_ml,specific_humidity_ml)
+tdk=tdk_from_th_q(air_potential_temperature_ml,specific_humidity_ml)
+tdk=tdk_from_tk_q(air_temperature_ml,specific_humidity_ml)
+air_temperature_celsius_ml=convert_unit(air_temperature_ml,celsius)
+vp_air_temperature_celsius=convert_unit(air_temperature_ml,celsius)
+vp_dew_point_temperature_celsius=convert_unit(tdk,celsius)
+vp_x_wind_ms=identity(x_wind_ml)
+vp_y_wind_ms=identity(y_wind_ml)
+vp_relative_humidity=identity(relative_humidity_ml)
+vp_omega_pas=multiply(upward_air_velocity_ml,const:0.01)
+</VERTICAL_PROFILE_COMPUTATIONS>
+
+
+<VERTICAL_CROSSECTION_FILES>
+#m=HIRLAM.8KM.00   f=$(OPDATA)/hirlam8/vc8km00.dat
+m=UM.4KM          f=$(OPDATA)/um4km/vcUM4km.dat
+</VERTICAL_CROSSECTION_FILES>
+
+<VERTICAL_CROSSECTION_FILES>
+m=EC_bfs f=$(OPDATA2)/ec/bf/nc4/ec_bfs_vc_[yyyymmddHH].nc t=netcdf
+</VERTICAL_CROSSECTION_FILES>
+
+
+<VERTICAL_CROSSECTION_PARAMETERS>
+air_temperature[AROME-Metcoop.vcross.*]=air_temperature_ml
+x_wind_ml[AROME-Metcoop.vcross.*]=x_wind_ml
+y_wind_ml[AROME-Metcoop.vcross.*]=y_wind_ml
+w[AROME-Metcoop.vcross.*]=upward_air_velocity_ml
+w[AROME-Metcoop.vcross.*]=upward_air_velocity_ml
+surface_geopotential[AROME-Metcoop.vcross.*]=surface_geopotential
+surface_geopotential[AROME-Metcoop.vcross.*]=surface_geopotential
+
+</VERTICAL_CROSSECTION_PARAMETERS>
+
+
+<VERTICAL_CROSSECTION_COMPUTATIONS>
+air_temperature_ml=tk_from_th(air_potential_temperature_ml)
+#vc_surface_height=height_above_msl_from_surface_geopotential(surface_geopotential)
+#vc_surface_pressure=convert_unit(surface_air_pressure,hPa)
+vc_surface_pressure  = convert_unit(surface_air_pressure,hPa)
+vc_surface_height    = height_above_msl_from_surface_geopotential(surface_geopotential)
+vc_specific_humidity = identity(specific_humidity_ml)
+vc_air_temperature   = identity(air_temperature_ml)
+#relative_humidity_ml = vcf_rh_from_tk_q(air_temperature_ml)
+tc            = convert_unit(air_temperature_ml,celsius)
+th            = th_from_tk(air_temperature_ml)
+air_potential_temperature  = the_from_tk_q(air_temperature_ml,specific_humidity_ml)
+rh            = rh_from_tk_q(air_temperature_ml,specific_humidity_ml)
+rh            = rh_from_th_q(air_potential_temperature_ml,specific_humidity_ml)
+ff_total_ms   = total(x_wind_ml, y_wind_ml)
+ff_total_kt   = convert_unit(ff_total_ms,knot)
+ff_normal     = normal(x_wind_ml, y_wind_ml)
+ff_tangential = tangential(x_wind_ml, y_wind_ml)
+w_scaled      = multiply(upward_air_velocity_ml,const:100)
+sqrt_tke      = sqrt(turbulent_kinetic_energy_ml)
+
+</VERTICAL_CROSSECTION_COMPUTATIONS>
+
+
+<VERTICAL_CROSSECTION_PLOTS>
+name=EMEP_ash   plot=CONTOUR(ash_concentration) colour=green
+name=Wind       plot=WIND(ff_tangential,ff_normal)         colour=blue
+name=WindXY     plot=VECTOR(x_wind_ml,y_wind_ml)              colour=green
+name=Temp(C)    plot=CONTOUR(tc)                       colour=red  line.interval=1.
+name=Temp(K)    plot=CONTOUR(air_temperature_ml)        colour=red  line.interval=1.
+name=THE        plot=CONTOUR(air_potential_temperature) colour=blue  line.interval=4.
+name=Skydekke   plot=CONTOUR(cloud_area_fraction_ml) colour=blue  line.interval=0.2
+
+# Atmospheric model data
+name=TH        plot=CONTOUR(th) colour=blue line.interval=4.
+name=Q         plot=CONTOUR(specific_humidity_ml)  colour=blue  line.interval=0.001
+name=RH        plot=CONTOUR(rh) colour=red  line.interval=10.
+name=W         plot=CONTOUR(upward_air_velocity_ml)  colour=red  line.interval=0.1
+#name=Pot.Virv. plot=CONTOUR(pv) colour=red  line.interval=1.
+#name=Wind      plot=WIND(ff_tangent,ff_normal)        colour=black
+#name=Wind_NSEW plot=WIND(ff_east_west,ff_north_south) colour=black
+#name=VT+OMEGA       plot=VT+OMEGA(ff_tangent,omega)   colour=darkgreen vector.unit=1.
+#name=(VT-VGT)+OMEGA plot=VT+OMEGA(ffag_tangent,omega) colour=darkgreen vector.unit=1.
+name=VT+W*100        plot=VECTOR(ff_tangential,w_scaled)   colour=darkgreen vector.unit=1.
+#name=(VT-VGT)+W     plot=VT+W(ffag_tangent,w) colour=darkgreen vector.unit=1.
+#name=Sat.ekviv.pot.temp plot=CONTOUR(thesat) colour=red line.interval=4.
+#name=M(Vn+f*s) plot=CONTOUR(m) colour=red line.interval=4.
+#name=Omega     plot=CONTOUR(omega) colour=red line.interval=0.001
+name=FF          plot=CONTOUR(ff_total_ms)       colour=red  line.interval=4.
+name=FF.knots     plot=CONTOUR(ff_total_kt) colour=red  line.interval=4.
+name=FF_normal   plot=CONTOUR(ff_normal)      colour=red  line.interval=4.
+name=FF_tangent  plot=CONTOUR(ff_tangential)     colour=blue line.interval=4.
+name=TKE_SQRT plot=CONTOUR(sqrt_tke) colour=red line.interval=0.5
+#name=Duct.OLD        plot=CONTOUR(d1)         colour=black line.interval=10.
+#name=QCLOUD      plot=CONTOUR(cloud_liquid_water_content_of_atmosphere_layer)     colour=red   line.interval=0.0001
+#
+#name=U(x_grid)  plot=CONTOUR(u)  colour=red  line.interval=4.
+#name=V(y_grid)  plot=CONTOUR(v)  colour=blue line.interval=4.
+#name=Ug(x_grid) plot=CONTOUR(ug) colour=red  line.interval=4.
+#name=Vg(y_grid) plot=CONTOUR(vg) colour=blue line.interval=4.
+#
+#name=HV          plot=CONTOUR(hv_total)       colour=red  line.interval=0.0004
+#name=HV_vektor   plot=VECTOR(hv_tangent,hv_normal) colour=red vector.unit=0.001
+#name=HV_normal   plot=CONTOUR(hv_normal)      colour=red  line.interval=0.0004
+#name=HV_tangent  plot=CONTOUR(hv_tangent)     colour=blue line.interval=0.0004
+#
+## misc. parameters from postprocessing
+#name=DUCTING   plot=CONTOUR(ducting) colour=red  line.interval=5.
+#name=ICING     plot=CONTOUR(icingind) colour=blue line.interval=1.
+#name=CONTRAILS plot=CONTOUR(cont) colour=black line.interval=1.
+#
+## Ocean model data
+#name=Temp            plot=CONTOUR(seatemp)      colour=blue line.interval=0.2
+#name=Salt            plot=CONTOUR(salt)         colour=red  line.interval=0.1
+#name=Current         plot=VECTOR(ffcurr_tangent,ffcurr_normal)        colour=red vector.unit=0.2
+#name=Current_NSEW    plot=VECTOR(ffcurr_east_west,ffcurr_north_south) colour=red vector.unit=0.2
+#name=Current_speed   plot=CONTOUR(ffcurr_total) colour=red  line.interval=0.1
+#name=Current_normal  plot=CONTOUR(ffcurr_normal)  colour=red  line.interval=0.1
+#name=Current_tangent plot=CONTOUR(ffcurr_tangent) colour=blue line.interval=0.1
+#name=Current_north_south  plot=CONTOUR(ffcurr_north_south) colour=red  line.interval=0.1
+#name=Current_east_west    plot=CONTOUR(ffcurr_east_west)   colour=blue line.interval=0.1
+#name=Ucurr(x_grid)   plot=CONTOUR(ucurr)        colour=red  line.interval=0.1
+#name=Vcurr(y_grid)   plot=CONTOUR(vcurr)        colour=blue line.interval=0.1
+
+</VERTICAL_CROSSECTION_PLOTS>
+
+<SPECTRUM_FILES>
+
+# prognostic data
+m=WAM.50KM.00  f=$(OPDATA)/wave/wamspec00.dat
+m=WAM.50KM.12  f=$(OPDATA)/wave/wamspec12.dat
+
+</SPECTRUM_FILES>
+
+
+<DRAWING>
+# Symbol styles
+symbol="Arrow" file=$(share_diana_dir)/images/symbols/WeatherSymbol_Right_Arrow.svg
+symbol="Cold" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Cold.svg
+symbol="Diagonal Cross" file=$(share_diana_dir)/images/symbols/WeatherSymbol_Diagonal_Cross.svg
+symbol="Drizzle" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Drizzle.svg
+symbol="Freezing Drizzle" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Freezing_Drizzle.svg
+symbol="Freezing Precipitation" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_FreezingPrecipitation.svg
+symbol="High Pressure" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_High_Pressure.svg
+symbol="Hail" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_Hail_Filled.svg
+symbol="Low Pressure" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Low_Pressure.svg
+symbol="Moderate Aircraft Icing" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_ModerateAircraftIcing.svg
+symbol="Moderate Turbulence" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_ModerateTurbulence.svg
+symbol="Mountain Waves" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_MountainWaves.svg
+symbol="Mountain Obscuration" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_MountainObscuration.svg
+symbol="Pressure Centre Location" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_PressureCentreLocation.svg
+symbol="Radioactive Materials In The Atmosphere" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_RadioactiveMaterialsInTheAtmosphere.svg
+symbol="Rain" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Rain.svg
+symbol="Severe Aircraft Icing" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_SevereAircraftIcing.svg
+symbol="Severe Sand Or Dust Haze" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_SevereSandOrDustHaze.svg
+symbol="Severe Turbulence" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_SevereTurbulence.svg
+symbol="Sleet" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Sleet.svg
+symbol="Sleet Shower" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Sleet_Shower.svg
+symbol="Shower" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_Shower.svg
+symbol="Snow" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_Snow.svg
+symbol="Snow Shower" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Snow_Shower.svg
+symbol="Thunderstorms" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_Thunderstorms.svg
+symbol="Thunderstorms with Hail" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Thunderstorms_with_Hail.svg
+symbol="Tropical Cyclone" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_TropicalCyclone.svg
+symbol="Visible Volcanic Ash Cloud" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_VisibleVolcanicAshCloud.svg
+symbol="Volcanic Eruption" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_VolcanicEruption.svg
+symbol="Warm" file=$(share_diana_dir)/images/symbols/WeatherSymbol_WMO_Warm.svg
+symbol="Widespread Blowing Snow" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadBlowingSnow.svg
+symbol="Widespread Fog" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadFog.svg
+symbol="Widespread Fog" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadFog_with_V.svg
+symbol="Widespread Haze" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadHaze.svg
+symbol="Widespread Mist" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadMist.svg
+symbol="Widespread Sandstorm Or Duststorm" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadSandstormOrDuststorm.svg
+symbol="Widespread Smoke" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WidespreadSmoke.svg
+symbol="Wind Arrow Or Flight Level Double Bar" file=$(share_diana_dir)/images/symbols/WeatherSymbol_ICAO_WindArrowOrFlightLevelDoubleBar.svg
+
+# Polyline styles
+style="Precipitation"                           linecolour=darkgreen linewidth=2 linesmooth=true closed=true
+style="Clouds (Byge)"                           linecolour=green linewidth=2 linepattern=dashed linesmooth=true \
+                                                closed=true
+style="Fog"                                     linecolour=black linewidth=2 linepattern=dashed linesmooth=true \
+                                                fillcolour=grey fillpattern=zigzag closed=true
+style="Significant weather"                     linewidth=2 linesmooth=true decoration1=SIGWX \
+                                                decoration1.colour=black closed=true linealpha=0 \
+                                                fillalpha=0
+style="Significant weather (TURB/VA/RC)"        linewidth=2 linesmooth=true decoration1=SIGWX \
+                                                decoration1.colour=red closed=true linealpha=0 \
+                                                fillalpha=0
+style="Significant weather (ICE/TCU/CB)"        linewidth=2 linesmooth=true decoration1=SIGWX \
+                                                decoration1.colour=blue closed=true linealpha=0 \
+                                                fillalpha=0
+style="Reduced visibility (low clouds)"         linecolour=255:164:71 linewidth=2 linepattern=dashed \
+                                                linesmooth=true closed=true
+style="Clouds"                                  linecolour=red linewidth=2 linesmooth=true fillcolour=red \
+                                                fillpattern=diagleft closed=true
+style="Ice"                                     linecolour=olive linewidth=2 linesmooth=true fillcolour=olive \
+                                                fillpattern=paralyse closed=true
+style="Ash cloud (observed)"                    linecolour=black linewidth=3 closed=true fillalpha=0
+style="Ash cloud FL0/200 (observed)"            linecolour=red linewidth=3 closed=true fillalpha=0
+style="Ash cloud FL200/350 (observed)"          linecolour=green linewidth=3 closed=true fillalpha=0
+style="Ash cloud FL350/550 (observed)"          linecolour=blue linewidth=3 closed=true fillalpha=0
+style="Ash cloud (forecast)"                    linecolour=black linewidth=3 linepattern=dashed closed=true fillalpha=0
+style="Ash cloud FL0/200 (forecast)"            linecolour=red linewidth=3 linepattern=dashed closed=true fillalpha=0
+style="Ash cloud FL200/350 (forecast)"          linecolour=green linewidth=3 linepattern=dashed closed=true fillalpha=0
+style="Ash cloud FL350/550 (forecast)"          linecolour=blue linewidth=3 linepattern=dashed closed=true fillalpha=0
+
+style="Cold front"                              linecolour=blue linewidth=3 decoration1=triangles \
+                                                decoration1.colour=blue linesmooth=true closed=false \
+                                                fillalpha=0
+style="Warm front"                              linecolour=red linewidth=3 decoration1=arches \
+                                                decoration1.colour=red linesmooth=true closed=false \
+                                                fillalpha=0
+style="Occluded front"                          linecolour=purple linewidth=3 decoration1=arches,triangles \
+                                                decoration1.colour=purple linesmooth=true closed=false \
+                                                fillalpha=0
+style="Cold occlusion"                          linecolour=blue linewidth=3 decoration1=arches,triangles \
+                                                decoration1.colour=blue linesmooth=true closed=false \
+                                                fillalpha=0
+style="Warm occlusion"                          linecolour=red linewidth=3 decoration1=arches,triangles \
+                                                decoration1.colour=red linesmooth=true closed=false \
+                                                fillalpha=0
+style="Stationary front"                        linecolour=grey linewidth=3 decoration1=arches \
+                                                decoration1.colour=red decoration2=triangles \
+                                                decoration2.colour=blue decoration2.offset=1 linesmooth=true \
+                                                decoration2.offset=2 closed=false fillalpha=0
+style="Squall line"                             linecolour=blue linewidth=3 decoration1=crosses \
+                                                linesmooth=true closed=false fillalpha=0
+style="Trough line"                             linecolour=blue linewidth=1 linesmooth=true closed=false \
+                                                fillalpha=0
+style="Significant weather front"               linewidth=2 linesmooth=true decoration1=SIGWX \
+                                                decoration1.colour=black closed=false linealpha=0 \
+                                                fillalpha=0
+style="Significant weather (TURB/VA/RC) front"  linewidth=2 linesmooth=true decoration1=SIGWX \
+                                                decoration1.colour=red closed=false linealpha=0 \
+                                                fillalpha=0
+style="Significant weather (ICE/TCU/CB) front"  linewidth=2 linesmooth=true decoration1=SIGWX \
+                                                decoration1.colour=blue closed=false linealpha=0 \
+                                                fillalpha=0
+style="Jet stream"                              linecolour=black linewidth=3 linesmooth=true decoration1=arrow \
+                                                closed=false fillalpha=0
+style="Cross section"                           linecolour=150:0:150 linewidth=3 linepattern=solid linesmooth=false \
+                                                fillalpha=0 closed=false
+style="Plain line" linecolour=black linewidth=3 linesmooth=true closed=false fillalpha=0 linewidth=2
+
+# Text styles
+textstyle="Label" linecolour=black linealpha=0 fillcolour=white fillalpha=255 textcolour=black fontsize=10
+textstyle="Large text" linecolour=black linealpha=0 fillcolour=white fillalpha=255 textcolour=black fontsize=20
+textstyle="SIGWX label" linecolour=black linealpha=0 fillcolour=white fillalpha=255 textcolour=black fontsize=25
+
+# Composite styles
+composite="Text above Text" objects=text:text values="Text:Text" styles="SIGWX label:SIGWX label" layout=vertical linealpha=0 \
+                            fillcolour=white fillalpha=255
+composite="X over X"        objects=text:line:text values=X::X styles="SIGWX label:Plain line:SIGWX label" layout=vertical \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Volcano label"   objects=symbol:text values=":XXX" styles="Forecast|Volcanic Eruption:SIGWX label" fillcolour=white hide=true linealpha=0
+composite="Moderate Turbulence" objects=symbol values="" styles="Forecast|Moderate Turbulence" fillalpha=255 fillcolour=white linealpha=0
+composite="Severe Turbulence" objects=symbol values="" styles="Forecast|Severe Turbulence" fillalpha=255 fillcolour=white linealpha=0
+composite="Moderate/Severe Turbulence" objects=symbol:line:symbol values="::" styles="Forecast|Moderate Turbulence:Plain line:Forecast|Severe Turbulence" \
+                            fillalpha=255 layout=diagonal fillcolour=white linealpha=0
+composite="Moderate/Severe Aircraft Icing" objects=symbol:line:symbol values="::" \
+                            styles="Forecast|Moderate Aircraft Icing:Plain line:Forecast|Severe Aircraft Icing" fillalpha=255 \
+                            fillcolour=white layout=diagonal linealpha=0
+composite="Moderate Aircraft Icing with X over X" objects=symbol:composite values=":" styles="Forecast|Moderate Aircraft Icing:X over X" \
+                            layout=horizontal fillcolour=white fillalpha=255 linealpha=0
+composite="Moderate Turbulence with X over X" objects=symbol:composite values=":" styles="Forecast|Moderate Turbulence:X over X" \
+                            layout=horizontal fillcolour=white fillalpha=255 linealpha=0
+composite="Predefined Text with X over X" objects=text:composite values="X:" styles="SIGWX label:X over X" layout=horizontal \
+                            fillcolour=white linealpha=0
+composite="Severe Aircraft Icing with X over X" objects=symbol:composite values="Text:" \
+                            styles="Forecast|Severe Aircraft Icing:X over X" layout=horizontal fillcolour=white linealpha=0
+composite="Severe Turbulence with X over X" objects=symbol:composite values=":" styles="Forecast|Severe Turbulence:X over X" \
+                            layout=horizontal fillcolour=white fillalpha=255 linealpha=0
+composite="Text with X over X" objects=text:composite values="Text:" styles="SIGWX label:X over X" layout=horizontal \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Moderate/Severe aircraft icing with X over X" objects=composite:composite values=":" styles="Moderate/Severe Aircraft Icing:X over X" \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Moderate/Severe turbulence with X over X" objects=composite:composite values=":" styles="Moderate/Severe Turbulence:X over X" \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Predefined Text above X over X" objects=text:composite values="Text:" styles="SIGWX label:X over X" layout=vertical \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Text above X over X" objects=text:composite values="Text:" styles="SIGWX label:X over X" layout=vertical \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Text above Text with X over X" objects=composite:composite values=":" styles="Text above Text:X over X" layout=horizontal \
+                            fillcolour=white fillalpha=255 linealpha=0
+composite="Predefined Text inside blue circle" objects=text values="X" styles="SIGWX label" linecolour=blue \
+                            fillcolour=white fillalpha=255 closed=true
+composite="Predefined Text inside red diamond" objects=text values="X" styles="SIGWX label" linecolour=red \
+                            fillcolour=white fillalpha=255 closed=true
+composite="Predefined Text inside curved scroll" objects=text values="X" styles="SIGWX label" linecolour=black \
+                            fillcolour=white fillalpha=255 closed=true
+composite="Volcanic Eruption" objects=composite:text values=":Text" styles="Volcano label:SIGWX label" layout=vertical \
+                            fillcolour=white fillalpha=255 linecolour=black closed=true
+composite="Predefined Text over Predefined Text inside blue curved rectangle" objects=text:text values="X:X" \
+                            styles="SIGWX label:SIGWX label" fillcolour=white fillalpha=255 closed=true linecolour=blue
+
+# Predefined text strings for use in composite objects.
+complextext="BKN/OVC STF,RA,RADZ,SHRA,SN,SHSN,LOC FG,BR,NSC,RASN,SHSNGS,SHRASN,SHRA,BR/FG,DZ,FZRA,SFC VIS,LT 5 KM,ISOL,EMBD CB,SCT/BKN,CB/TCU"
+
+# Property editor rules
+hide-property-sections="style,met:style"
+show-property-sections="met:info:,TimeSpan:,srcFile"
+</DRAWING>

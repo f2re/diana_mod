@@ -1,0 +1,20 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+export DH_VERBOSE=1
+
+# Support parallel building.
+%:
+	dh $@ --parallel
+
+override_dh_auto_configure:
+	./autogen.sh
+	./configure $(confflags) \
+	    --disable-silent-rules \
+	    --prefix=/usr \
+	    --enable-obs-bufr \
+	    --enable-video-export \
+	    --disable-silent-rules \
+	    --enable-geotiff \
+	    --enable-embedded \
+	    --program-suffix=-nogl
