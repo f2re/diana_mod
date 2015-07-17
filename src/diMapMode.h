@@ -52,7 +52,7 @@ enum object_modes{
 
 enum combine_modes{
   set_region,     // select region
-  set_borders     // edit border
+  set_borders,     // edit border
 };
 
 /// suggestive use of cursors

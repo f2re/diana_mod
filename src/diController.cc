@@ -595,7 +595,9 @@ void Controller::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
   // A more general way to override normal keypress behaviour is to query
   // the managers to find any that are in editing mode.
   for (PlotModule::managers_t::iterator it = plotm->managers.begin(); it != plotm->managers.end(); ++it) {
-    if (it->second->isEnabled() && it->second->isEditing()) {
+    //if (it->second->isEnabled() && it->second->isEditing()) {
+    if (it->second->isEnabled()){
+
       it->second->sendKeyboardEvent(ke, res);
       if (it->second->hasFocus())
         return;
@@ -610,6 +612,9 @@ void Controller::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
 
   // first check keys independent of mode
   //-------------------------------------
+
+  plotm->sendKeyboardEvent(ke, res);
+
   if (ke->type() == QEvent::KeyPress){
     if (ke->key() == Qt::Key_PageUp or ke->key() == Qt::Key_PageDown) {
       const bool forward = ke->key() == Qt::Key_PageDown;

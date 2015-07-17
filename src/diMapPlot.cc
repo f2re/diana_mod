@@ -893,11 +893,11 @@ bool MapPlot::plotGeoGrid(DiGLPainter* gl, const MapInfo& mapinfo, bool plot_lon
   diutil::MapValuePosition lat_valuepos = diutil::mapValuePositionFromText(mapinfo.lat.value_pos);
   float lat_fontsize = mapinfo.lat.fontsize;
 
-  /*
-  METLIBS_LOG_DEBUG((lon_values ? "lon_values=ON" : "lon_values=OFF") << " "
+/*
+  METLIBS_LOG_WARN((lon_values ? "lon_values=ON" : "lon_values=OFF") << " "
   << (lat_values ? "lat_values=ON" : "lat_values=OFF") << " lon_valuepos="
   << lon_valuepos << " lat_valuepos=" << lat_valuepos);
-   */
+*/
 
 
   const Projection& p = getStaticPlot()->getMapArea().P();
@@ -1110,6 +1110,7 @@ bool MapPlot::plotGeoGrid(DiGLPainter* gl, const MapInfo& mapinfo, bool plot_lon
   return true;
 }
 
+//area names ftom text file
 bool MapPlot::plotLinesSimpleText(DiGLPainter* gl, const std::string& filename)
 {
   // plot lines from very simple text file,

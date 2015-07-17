@@ -42,6 +42,7 @@
 #include <deque>
 #include <memory>
 
+
 class ObsPlot;
 class MapPlot;
 class AnnotationPlot;
@@ -63,6 +64,7 @@ class MeasurementsPlot;
 class StationPlot;
 
 class QMouseEvent;
+class QKeyEvent;
 
 namespace diutil {
 
@@ -140,6 +142,9 @@ private:
   int areaIndex;
   bool areaSaved;
   bool dorubberband;
+  bool rotatemap; //rotate event
+  bool movemap; //move event
+  bool spacePressed; //for rotate map
   bool keepcurrentarea;
 
   struct obsOneTime {
@@ -387,6 +392,10 @@ public:
   // keyboard/mouse events
   /// send one mouse event
   void sendMouseEvent(QMouseEvent* me, EventResult& res);
+
+  /// send one keyboard event
+  void sendKeyboardEvent(QKeyEvent* ke, EventResult& res);
+
 
   enum AreaNavigationCommand {
     ANAV_HOME,

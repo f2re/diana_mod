@@ -43,7 +43,7 @@ class Rectangle {
 public:
   float x1, y1, x2, y2;
 
-private:
+//private:
   // extended area for isnear
   float ex1, ey1, ex2, ey2;
 

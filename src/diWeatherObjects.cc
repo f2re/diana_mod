@@ -122,7 +122,7 @@ void WeatherObjects::plot(DiGLPainter* gl, Plot::PlotOrder porder)
 
 bool WeatherObjects::changeProjection(const Area& newArea)
 {
-  METLIBS_LOG_SCOPE("Change projection from " << itsArea <<" to " << newArea);
+  //METLIBS_LOG_WARN("Change projection from " << itsArea.P() <<" to " << newArea.P());
 
   if (itsArea.P() == newArea.P())
     return false;

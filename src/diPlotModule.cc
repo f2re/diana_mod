@@ -56,6 +56,9 @@
 #include <puDatatypes/miCoordinates.h>
 #include <puTools/miStringFunctions.h>
 
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string_regex.hpp>
+
 #include <QMouseEvent>
 
 //#define DEBUGPRINT
@@ -99,6 +102,9 @@ PlotModule::PlotModule()
   , mCanvas(0)
   , hardcopy(false)
   , dorubberband(false)
+  , rotatemap(false)
+  , movemap(false)
+  , spacePressed(false)
   , keepcurrentarea(true)
   , obsnr(0)
 {
@@ -229,8 +235,11 @@ void PlotModule::prepareArea(const vector<string>& inp)
   Projection proj;
   Rectangle rect;
 
+
+
   const vector<std::string> tokens= miutil::split_protected(inp[0], '"','"'," ",true);
   for (size_t i=0; i<tokens.size(); i++){
+
     const vector<std::string> stokens= miutil::split(tokens[i], 1, "=");
     if (stokens.size() > 1) {
       const std::string key= miutil::to_lower(stokens[0]);
@@ -243,6 +252,7 @@ void PlotModule::prepareArea(const vector<string>& inp)
       } else if (key==key_proj){
         if ( proj.set_proj_definition(stokens[1]) ) {
           requestedarea.setP(proj);
+          //METLIBS_LOG_WARN("PROJECTION INIT: "<< proj);
         } else {
           METLIBS_LOG_WARN("Unknown proj definition: "<< stokens[1]);
         }
@@ -1063,6 +1073,15 @@ void PlotModule::plotOver(DiGLPainter* gl)
     gl->setLineStyle(staticPlot_->getBackContrastColour(), 2);
     gl->drawRect(pold.x(), pold.y(), pnew.x(), pnew.y());
   }
+
+  //rotate line
+  if ( rotatemap ){
+      const XY pold = staticPlot_->PhysToMap(staticPlot_->GeoToPhys( XY(179,89.99) ));
+      const XY pnew = staticPlot_->PhysToMap(XY(newx, newy));
+
+      gl->setLineStyle(staticPlot_->getBackContrastColour(), 2);
+      gl->drawLine(pold.x(), pold.y(), pnew.x(), pnew.y());
+  }
 }
 
 const vector<AnnotationPlot*>& PlotModule::getAnnotations()
@@ -1278,7 +1297,7 @@ double PlotModule::getEntireWindowDistances(const bool horizontal){
 
 double PlotModule::getWindowDistances(const float& x, const float& y, const bool horizontal){
 
-  if ( !dorubberband )
+  if ( !dorubberband && !rotatemap )
     return getEntireWindowDistances(horizontal);
 
   float flat1, flat3, flat4, flon1, flon3, flon4;
@@ -1296,7 +1315,7 @@ double PlotModule::getWindowDistances(const float& x, const float& y, const bool
 
 double PlotModule::getMarkedArea(const float& x, const float& y){
 
-  if ( !dorubberband) return 0.;
+  if ( !dorubberband && !rotatemap) return 0.;
 
   float flat1, flat2, flat3, flat4, flon1, flon2, flon3, flon4;
   PhysToGeo(startx, starty, flat1, flon1);
@@ -2049,19 +2068,45 @@ void PlotModule::zoomOut()
   setMapAreaFromPhys(diutil::adjustedRectangle(getPhysRectangle(), dx, dy));
 }
 
+
+//keyboard event
+void PlotModule::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
+{
+   //if (ke->key() == Qt::Key_unknown) return;
+   // when SPACE is holded
+
+
+   if ((ke->isAutoRepeat() && ke->key() == Qt::Key_Space) ) {
+     spacePressed= true;
+   }else
+   if ( ke->key() == Qt::Key_Space)  { //(ke->type() == QEvent::KeyRelease &&
+     spacePressed= false;
+   }
+}
+
 // keyboard/mouse events
 void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
 {
   newx = me->x();
   newy = me->y();
 
+
   // ** mousepress
   if (me->type() == QEvent::MouseButtonPress) {
     oldx = me->x();
     oldy = me->y();
 
+
     if (me->button() == Qt::LeftButton) {
-      dorubberband = true;
+
+      if ( spacePressed ){
+          movemap=true;
+          dorubberband=false;
+      } else{
+          movemap=false;
+          dorubberband = true;
+      }
+      rotatemap=false;
       res.savebackground = true;
       res.background = true;
       res.repaint = true;
@@ -2077,7 +2122,15 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
     }
 
     else if (me->button() == Qt::RightButton) {
-      res.action = rightclick;
+      //res.action = rightclick;
+      rotatemap=true;
+
+      //change to rotate maps
+
+      res.savebackground = true;
+      res.background = true;
+      res.repaint = true;
+      return;
     }
 
     return;
@@ -2087,7 +2140,7 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
 
     res.action = browsing;
 
-    if (dorubberband) {
+    if (dorubberband || rotatemap) {
       res.action = quick_browsing;
       res.background = false;
       res.repaint = true;
@@ -2104,6 +2157,17 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       res.repaint = true;
       res.newcursor = paint_move_cursor;
       return;
+    } else if ( movemap ){
+        const float dx = oldx - me->x(), dy = oldy - me->y();
+        setMapAreaFromPhys(diutil::movedRectangle(getPhysRectangle(), dx, dy));
+        oldx = me->x();
+        oldy = me->y();
+
+        res.action = quick_browsing;
+        res.background = true;
+        res.repaint = true;
+
+        return;
     }
 
   }
@@ -2118,10 +2182,35 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
     // minimum rubberband size for zooming (in pixels)
     const float rubberlimit = 15.;
 
-    if (me->button() == Qt::RightButton) { // zoom out
+    if (me->button() == Qt::RightButton) { // rotate
+        x1 = oldx;
+        y1 = oldy;
+        x2 = me->x();
+        y2 = me->y();
 
       //end of popup
       //res.action= rightclick;
+
+        if (rotatemap){
+            float lat,lon;
+
+            PhysToGeo(me->x(),me->y(), lat,lon );
+            std::string rotmap=requestedarea.getAreaString();
+            //METLIBS_LOG_WARN("X " << me->x() <<" Y " << me->y() << ", lat:"<<lat << " lon:"<<lon<<" map:"<<rotmap );
+            boost::regex xRegEx("lon_0=(\\d+)");
+            std::string xFormatString("lon_0="+miutil::from_number( int(lon) ));
+            requestedarea.setAreaFromString(boost::regex_replace(rotmap, xRegEx, xFormatString, boost::match_default | boost::format_perl));
+            //METLIBS_LOG_WARN(requestedarea.getAreaString());
+            staticPlot_->setMapArea(requestedarea);
+            rotatemap=false;
+            METLIBS_LOG_WARN(diutil::adjustedRectangle(getPhysRectangle(), staticPlot_->getPhysWidth()*(-0.1), staticPlot_->getPhysHeight()*(-0.1)));
+            setMapAreaFromPhys(diutil::adjustedRectangle(getPhysRectangle(), 0, 0));
+
+            res.repaint = true;
+            res.background = true;
+            return;
+        }
+
 
     } else if (me->button() == Qt::LeftButton) {
 
@@ -2139,13 +2228,15 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
         y2 = oldy;
       }
       if (fabsf(x2 - x1) > rubberlimit && fabsf(y2 - y1) > rubberlimit) {
-        if (dorubberband)
+        if (dorubberband || movemap)
           plotnew = true;
+
       } else {
         res.action = pointclick;
       }
 
       dorubberband = false;
+      movemap=false;
       startx = starty = 0;
 
     } else if (me->button() == Qt::MidButton) {
