@@ -2192,7 +2192,8 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       //res.action= rightclick;
 
         if (rotatemap){
-            float lat,lon;
+            float lat,lon,xmap,ymap;
+            int   h,w,nx,ny,nx1,ny1;
 
             PhysToGeo(me->x(),me->y(), lat,lon );
             std::string rotmap=requestedarea.getAreaString();
@@ -2200,12 +2201,24 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
             boost::regex xRegEx("lon_0=(\\d+)");
             std::string xFormatString("lon_0="+miutil::from_number( int(lon) ));
             requestedarea.setAreaFromString(boost::regex_replace(rotmap, xRegEx, xFormatString, boost::match_default | boost::format_perl));
-            //METLIBS_LOG_WARN(requestedarea.getAreaString());
-            staticPlot_->setMapArea(requestedarea);
             rotatemap=false;
-            METLIBS_LOG_WARN(diutil::adjustedRectangle(getPhysRectangle(), staticPlot_->getPhysWidth()*(-0.1), staticPlot_->getPhysHeight()*(-0.1)));
-            setMapAreaFromPhys(diutil::adjustedRectangle(getPhysRectangle(), 0, 0));
 
+            //get lat lon mouse coordinates (center of screen)
+            //me->x(),me->y()
+            PhysToMap(me->x(),me->y(),xmap,ymap);
+            //calculate screen size getMapSize
+            w=abs(int((staticPlot_->getMapSize().x2-staticPlot_->getMapSize().x1)*(0.4)));
+            h=abs(int((staticPlot_->getMapSize().y2-staticPlot_->getMapSize().y1)*(0.4)));
+
+            //left top
+            nx=xmap-w;
+            ny=ymap-h;
+            //bottom right
+            nx1=xmap+w;
+            ny1=ymap+h;
+
+            setMapAreaFromMap(diutil::adjustedRectangle(Rectangle(nx,ny,nx1,ny1),-0.2,-0.2));
+            staticPlot_->setMapArea(requestedarea);
             res.repaint = true;
             res.background = true;
             return;
