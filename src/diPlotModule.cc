@@ -2102,6 +2102,10 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       if ( spacePressed ){
           movemap=true;
           dorubberband=false;
+          areaInsert(true);
+          staticPlot_->panPlot(true);
+          res.newcursor = paint_move_cursor;
+          return;
       } else{
           movemap=false;
           dorubberband = true;
@@ -2157,17 +2161,6 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       res.repaint = true;
       res.newcursor = paint_move_cursor;
       return;
-    } else if ( movemap ){
-        const float dx = oldx - me->x(), dy = oldy - me->y();
-        setMapAreaFromPhys(diutil::movedRectangle(getPhysRectangle(), dx, dy));
-        oldx = me->x();
-        oldy = me->y();
-
-        res.action = quick_browsing;
-        res.background = true;
-        res.repaint = true;
-
-        return;
     }
 
   }
@@ -2226,6 +2219,13 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
 
 
     } else if (me->button() == Qt::LeftButton) {
+      if ( movemap )  {
+          staticPlot_->panPlot(false);
+          res.repaint = true;
+          res.background = true;
+          movemap=false;
+          return;
+      }
 
       x1 = oldx;
       y1 = oldy;
@@ -2241,7 +2241,7 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
         y2 = oldy;
       }
       if (fabsf(x2 - x1) > rubberlimit && fabsf(y2 - y1) > rubberlimit) {
-        if (dorubberband || movemap)
+        if (dorubberband)
           plotnew = true;
 
       } else {
