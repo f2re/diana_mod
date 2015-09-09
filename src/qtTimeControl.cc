@@ -55,7 +55,7 @@ TimeControl::TimeControl(QWidget* parent)
   : QDialog( parent) {
 
   //m_font= QFont( IQ.fontName.c_str(), IQ.fontSize, IQ.fontWeight );
-  m_font= QFont( "Helvetica", 12, 75 );
+  m_font= QFont( "Arial", 12, 75 );
 
   //  QFrame* frame= new QFrame(this);
   QGroupBox* frame= new QGroupBox("Time Control", this);

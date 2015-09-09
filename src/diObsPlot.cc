@@ -501,7 +501,7 @@ bool ObsPlot::updateObs()
   const long ltime = time(NULL);
 #endif // ROADOBS
   for (size_t i = 0; i < fileNames.size(); i++) {
-#ifdef ROADOBS
+#ifdef ROADOBSprintString
     // Dont ask the database too often if allObs, eg ligthning
     if (miutil::contains(fileNames[i], "ROAD")) {
       if (allObs)
@@ -4702,6 +4702,8 @@ void ObsPlot::printString(DiGLPainter* gl, const char *c,
     gl->getTextSize(c, w, h);
   if (align_right)
     x -= w;
+
+//  METLIBS_LOG_WARN("c " << c << " x:"<<x<< " y:"<<y );
 
   gl->drawText(c, x, y, 0.0);
 

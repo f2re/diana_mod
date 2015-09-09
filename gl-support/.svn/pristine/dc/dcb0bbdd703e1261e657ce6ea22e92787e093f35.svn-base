@@ -1,0 +1,22 @@
+#
+# Makefile for miFTGL 
+#
+# FTGL is a free open source library to enable developers to use arbitrary
+# fonts in their OpenGL (www.opengl.org)  applications.
+# Unlike other OpenGL font libraries FTGL uses standard font file formats
+# so doesn't need a preprocessing step to convert the high quality font data
+# into a lesser quality, proprietary format.
+# FTGL uses the Freetype (www.freetype.org) font library to open and 'decode'
+# the fonts. It then takes that output and stores it in a format most efficient
+# for OpenGL rendering.
+#
+
+
+
+SUBDIRS = src
+
+ACLOCAL_AMFLAGS = -I m4
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = miFTGL.pc
+

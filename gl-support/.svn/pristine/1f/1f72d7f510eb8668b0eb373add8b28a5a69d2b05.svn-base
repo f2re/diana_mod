@@ -1,0 +1,23 @@
+metlibs-gl-gltext (5.0.1-1) unstable; urgency=low
+
+  * make glText destructor virtual
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 12 Feb 2015 13:58:42 +0100
+
+metlibs-gl-gltext (5.0.0-3) unstable; urgency=low
+
+  * fixed dependencies
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 05 Feb 2014 09:03:16 +0100
+
+metlibs-gl-gltext (5.0.0-2) unstable; urgency=low
+
+  * google tests
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 04 Feb 2014 15:43:24 +0100
+
+metlibs-gl-gltext (5.0.0-1) unstable; urgency=low
+
+  * Split from all-in-one metlibs
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Mon, 03 Feb 2014 11:44:12 +0100

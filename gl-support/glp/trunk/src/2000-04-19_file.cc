@@ -1,0 +1,607 @@
+//
+// "$Id: 2000-04-19_file.cc 4306 2013-12-17 12:55:57Z juergens $"
+//
+//   GLPfile class function for the GLP library, an OpenGL printing toolkit.
+//
+//   The GLP library is distributed under the terms of the GNU Library
+//   General Public License which is described in the file "COPYING.LIB".
+//   If you use this library in your program, please include a line reading
+//   "OpenGL Printing Toolkit by Michael Sweet" in your version or copyright
+//   output.
+//
+// Contents:
+//
+//   GLPfile, ~GLPfile, EndPage
+//
+// Revision History:
+//
+//   $Log$
+//   Revision 1.1  2004/09/08 12:45:16  juergens
+//   *** empty log message ***
+//
+//   Revision 1.2  1996/07/13  12:52:02  mike
+//   Fixed shaded triangle procedure in PostScript prolog (ST).
+//   Added auto-rotation for GLP_FIT_TO_PAGE option.
+//
+//   Revision 1.1  1996/06/27  03:06:36  mike
+//   Initial revision
+//
+
+//
+// Include necessary headers.
+//
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <glpfile.h>
+#include <sstream>
+#include <vector>
+#include <iomanip>
+//
+// GLPfile constructor; this really doesn't do much, but instead you are
+// expected to steal this code as the basis of your own GLP subclass...
+//
+
+GLPfile :: GLPfile(char *print_name,	// I - Name of file/printer
+                   int  print_options,	// I - Output options
+                   int  print_size)	// I - Size of feedback buffer
+{
+  // Initialize private class data and allocate a feedback buffer...
+
+  options    = print_options;
+  bboxes     = NULL;
+  feedsize   = print_size > 0 ? print_size : 1024 * 1024;
+  feedback   = new GLfloat[feedsize];
+  colorsize  = 0;
+  colormap   = NULL;
+  page_count = 0;
+
+#ifdef DEBUG
+  cout << "feedsize = " << feedsize << ", feedback = " << (int)feedback << "\n" << flush;
+#endif /* DEBUG */
+
+  // Next open the indicated file...
+
+  // The mode in the original call didn't work -- removed by LBS 1999-10-25
+//   outfile = new fstream(print_name, ios::out, 0666);
+  outfile = new fstream(print_name, ios::out);
+  if (outfile == NULL)
+    return;
+
+  // Output the PostScript file header and prolog...
+
+  *outfile << "%!PS-Adobe-3.0\n";
+  *outfile << "%%LanguageLevel: 2\n";
+  *outfile << "%%Creator: GLP 0.1 by Michael Sweet (mike@easysw.com)\n";
+  *outfile << "%%Pages: (atend)\n";
+  *outfile << "%%EndComments\n";
+
+  *outfile << "%%BeginProlog\n";
+
+  if (options & GLP_GREYSCALE)
+    {
+      *outfile << "% Greyscale color command - r g b C\n";
+      *outfile << "/C { 0.0820 mul exch 0.6094 mul add exch 0.3086 mul add neg 1.0 add setgray } bind def\n";
+    }
+  else
+    {
+      *outfile << "% RGB color command - r g b C\n";
+      *outfile << "/C { setrgbcolor } bind def\n";
+    };
+  *outfile << "\n";
+
+  *outfile << "% Point primitive - x y radius r g b P\n";
+  *outfile << "/P { C newpath 0.0 360.0 arc closepath fill } bind def\n";
+  *outfile << "\n";
+
+  *outfile << "% Flat-shaded line - x2 y2 x1 y1 r g b L\n";
+  *outfile << "/L { C moveto lineto stroke } bind def\n";
+  *outfile << "\n";
+
+  *outfile << "% Smooth-shaded line - x2 y2 r2 g2 b2 x1 y1 r1 g1 b1 SL\n";
+  *outfile << "/SL {\n";
+  *outfile << "	/b1 exch def\n";
+  *outfile << "	/g1 exch def\n";
+  *outfile << "	/r1 exch def\n";
+  *outfile << "	/y1 exch def\n";
+  *outfile << "	/x1 exch def\n";
+  *outfile << "	/b2 exch def\n";
+  *outfile << "	/g2 exch def\n";
+  *outfile << "	/r2 exch def\n";
+  *outfile << "	/y2 exch def\n";
+  *outfile << "	/x2 exch def\n";
+  *outfile << "\n";
+  *outfile << "	b2 b1 sub abs 0.01 gt\n";
+  *outfile << "	g2 g1 sub abs 0.005 gt\n";
+  *outfile << "	r2 r1 sub abs 0.008 gt\n";
+  *outfile << "     or or {\n";
+  *outfile << "		/bm b1 b2 add 0.5 mul def\n";
+  *outfile << "		/gm g1 g2 add 0.5 mul def\n";
+  *outfile << "		/rm r1 r2 add 0.5 mul def\n";
+  *outfile << "		/ym y1 y2 add 0.5 mul def\n";
+  *outfile << "		/xm x1 x2 add 0.5 mul def\n";
+  *outfile << "\n";
+  *outfile << "		x1 y1 r1 g1 b1 xm ym rm gm bm SL\n";
+  *outfile << "		xm ym rm gm bm x2 y2 r2 g2 b2 SL\n";
+  *outfile << "	} {\n";
+  *outfile << "		x1 y1 x2 y2 r1 g1 b1 L\n";
+  *outfile << "	} ifelse\n";
+  *outfile << "} bind def\n";
+  *outfile << "\n";
+
+  *outfile << "% Flat-shaded triangle - x3 y3 x2 y2 x1 y1 r g b T\n";
+  *outfile << "/T { C newpath moveto lineto lineto closepath fill } bind def\n";
+  *outfile << "\n";
+
+  *outfile << "% Smooth-shaded triangle - x3 y3 r3 g3 b3 x2 y2 r2 g2 b2 x1 y1 r1 g1 b1 ST\n";
+  *outfile << "/ST {\n";
+  *outfile << "	/b1 exch def\n";
+  *outfile << "	/g1 exch def\n";
+  *outfile << "	/r1 exch def\n";
+  *outfile << "	/y1 exch def\n";
+  *outfile << "	/x1 exch def\n";
+  *outfile << "	/b2 exch def\n";
+  *outfile << "	/g2 exch def\n";
+  *outfile << "	/r2 exch def\n";
+  *outfile << "	/y2 exch def\n";
+  *outfile << "	/x2 exch def\n";
+  *outfile << "	/b3 exch def\n";
+  *outfile << "	/g3 exch def\n";
+  *outfile << "	/r3 exch def\n";
+  *outfile << "	/y3 exch def\n";
+  *outfile << "	/x3 exch def\n";
+  *outfile << "\n";
+  *outfile << "	b2 b1 sub abs 0.05 gt\n";
+  *outfile << "	g2 g1 sub abs 0.017 gt\n";
+  *outfile << "	r2 r1 sub abs 0.032 gt\n";
+  *outfile << "	b3 b1 sub abs 0.05 gt\n";
+  *outfile << "	g3 g1 sub abs 0.017 gt\n";
+  *outfile << "	r3 r1 sub abs 0.032 gt\n";
+  *outfile << "	b2 b3 sub abs 0.05 gt\n";
+  *outfile << "	g2 g3 sub abs 0.017 gt\n";
+  *outfile << "	r2 r3 sub abs 0.032 gt\n";
+  *outfile << "	or or or or or or or or {\n";
+  *outfile << "		/b12 b1 b2 add 0.5 mul def\n";
+  *outfile << "		/g12 g1 g2 add 0.5 mul def\n";
+  *outfile << "		/r12 r1 r2 add 0.5 mul def\n";
+  *outfile << "		/y12 y1 y2 add 0.5 mul def\n";
+  *outfile << "		/x12 x1 x2 add 0.5 mul def\n";
+  *outfile << "\n";
+  *outfile << "		/b13 b1 b3 add 0.5 mul def\n";
+  *outfile << "		/g13 g1 g3 add 0.5 mul def\n";
+  *outfile << "		/r13 r1 r3 add 0.5 mul def\n";
+  *outfile << "		/y13 y1 y3 add 0.5 mul def\n";
+  *outfile << "		/x13 x1 x3 add 0.5 mul def\n";
+  *outfile << "\n";
+  *outfile << "		/b32 b3 b2 add 0.5 mul def\n";
+  *outfile << "		/g32 g3 g2 add 0.5 mul def\n";
+  *outfile << "		/r32 r3 r2 add 0.5 mul def\n";
+  *outfile << "		/y32 y3 y2 add 0.5 mul def\n";
+  *outfile << "		/x32 x3 x2 add 0.5 mul def\n";
+  *outfile << "\n";
+  *outfile << "		x1 y1 r1 g1 b1 x12 y12 r12 g12 b12 x13 y13 r13 g13 b13\n";
+  *outfile << "		x2 y2 r2 g2 b2 x12 y12 r12 g12 b12 x32 y32 r32 g32 b32\n";
+  *outfile << "		x3 y3 r3 g3 b3 x32 y32 r32 g32 b32 x13 y13 r13 g13 b13\n";
+  *outfile << "		x32 y32 r32 g32 b32 x12 y12 r12 g12 b12 x13 y13 r13 g13 b13\n";
+  *outfile << "		ST ST ST ST\n";
+  *outfile << "	} {\n";
+  *outfile << "		x1 y1 x2 y2 x3 y3 r1 g1 b1 T\n";
+  *outfile << "	} ifelse\n";
+  *outfile << "} bind def\n";
+  *outfile << "\n";
+
+  *outfile << "%%EndProlog\n";
+}
+
+
+//
+// GLPfile destructor; like the constructor, this just does the basics.
+// You'll want to implement your own...
+//
+
+GLPfile :: ~GLPfile(void)
+{
+  // Free any memory we've allocated...
+
+  delete_all();
+
+  if (feedback != NULL)
+    delete feedback;
+  if (colormap != NULL)
+    delete colormap;
+
+  *outfile << "%%Pages: " << page_count << "\n";
+  *outfile << "%%EOF\n";
+  delete outfile;
+}
+
+
+string GLPfile::ps_dash(uint pattern, int repeat){
+  ostringstream ss;
+  vector<int> lens;
+  // linetype bits and bitmask
+  const int numbits= 16;
+  const uint bmask[numbits]=
+  {32768,16384,8192,4096,2048,1024,512,256,128,64,32,16,8,4,2,1};
+
+  int num=0, i, n, offset=0;
+  bool on, oldon, first=true, fblank=false;
+  for (int j=0; j<numbits; j++){
+    on = (pattern & bmask[j]);
+    num++;
+    // if change in bitmask
+    if (j>0 && oldon!=on){
+      lens.push_back(num-1);
+      num= 1;
+      if (first && !on) fblank= true;
+      first= false;
+    }
+    oldon= on;
+  }
+  lens.push_back(num);
+  n= lens.size();
+
+  // One entry means solid line
+  if (n==1) return "[]0 ";
+
+  // if first segment blank...set offset
+  if (fblank){
+    if (n>2){
+      offset= lens[1]+lens[2]-lens[0];
+    } else {
+      offset= lens[1];
+    }
+    lens.erase(lens.begin(),lens.begin());
+    n--;
+  }
+
+  // check if all lengths equal
+  num= lens[0];
+  for (i=0; i<n && lens[i]==num; i++)
+    ;
+  // if all equal...reduce to one
+  if (i==n){
+    lens.erase(&(lens[1]),lens.end());
+    n= 1;
+  }
+  
+  ss << "[";
+  for (i=0; i<n; i++) ss << repeat*lens[i] << " ";
+  ss << "] " << repeat*offset << " ";
+
+  return ss.str();
+}
+
+string GLPfile::ps_image(const GLPimage* image){
+  ostringstream ss;
+  int width;
+  int height;
+  int nbits= 8;
+  int ncomp= 3;
+  float sx,sy;
+  int strsize;
+  int truencomp= (image->format==GL_RGB ? 3 : 4);
+  unsigned char* data= (unsigned char*)image->pixels;
+
+  width= image->ix2 - image->ix1 + 1;
+  height= image->iy2 - image->iy1 + 1;
+  strsize= width*ncomp;
+  sx= width*image->sx;
+  sy= height*image->sy;
+
+  ss << "% ---- draw bitmap at "
+     << image->x << " " << image->y
+     << " Size (pixels):" << width << "x" << height
+     << " Scaled to:" << sx << "x" << sy
+     << "\n";
+  
+  ss << "gsave\n";
+  // image-data size
+  ss << "/picstr_" << strsize << " " << strsize << " string def\n";
+  // set rasterpos
+  ss << image->x << " " << image->y << " translate\n";
+//   ss << image->x << " " << image->y << " moveto\n";
+  // scaling
+  ss << sx << " " << sy << " scale\n";
+  // image width, height and bits/component
+  ss << width << " " << height << " " << nbits << "\n";
+  // matrix: map unit square to source
+  ss << "[" << width << " 0 0 " << height << " 0 0 ]\n";
+  // read image data
+  ss << "{currentfile picstr_" << strsize << " readhexstring pop}\n";
+  // single data source, number of components
+  ss << "false " << ncomp << "\n";
+  // the operator
+  ss << "colorimage\n";
+
+  // the datastring
+  if (image->format==GL_RGB || !image->blend){ // no blending
+    for (int j=image->iy1; j<=image->iy2; j++){
+      for (int i=image->ix1; i<=image->ix2; i++){
+	for (int k=0; k<ncomp; k++){
+	  ss << hex << setw(2) << setfill('0')
+	     << int(data[j*truencomp*image->w + i*truencomp + k]);
+	}
+      }
+      ss << "\n";
+    }
+
+  } else { // blend to background
+    unsigned char rgba[4], brgb[3];
+    // scale background colour to [0..255]
+    brgb[0]= b_rgba[0]*255;
+    brgb[1]= b_rgba[1]*255;
+    brgb[2]= b_rgba[2]*255;
+
+    for (int j=image->iy1; j<=image->iy2; j++){
+      for (int i=image->ix1; i<=image->ix2; i++){
+	for (int k=0; k<truencomp; k++){
+	  rgba[k]= data[j*truencomp*image->w + i*truencomp + k];
+	}
+	if (rgba[3]<255){ // do the blend
+	  for (int l=0; l<ncomp; l++)
+	    rgba[l]= ((255-rgba[3])/255)*brgb[l]+(rgba[3]/255)*rgba[l];
+	}
+	ss << hex << setw(2) << setfill('0') << int(rgba[0])
+	   << hex << setw(2) << setfill('0') << int(rgba[1])
+	   << hex << setw(2) << setfill('0') << int(rgba[2]);
+      }
+      ss << "\n";
+    }
+  }
+  ss << "grestore\n";
+  ss << "% End of imagedata\n";
+  
+  return ss.str();
+}
+
+//
+// 'EndPage' function; this does nothing except parse the bounding boxes
+// and output any remaining primitives.  It then frees the bounding box
+// and primitive lists...
+//
+
+int
+GLPfile :: EndPage(void)
+{
+  GLPbbox	*bbox;				// Current bounding box
+  GLPprimitive	*prim;				// Current primitive
+  int		i;				// Color index background...
+//   GLfloat	rgba[4];			// RGBA background...
+  GLint		viewport[4];
+  int           imagenum=0;
+
+
+#ifdef DEBUG
+  cout << "EndPage()\n" << flush;
+#endif /* DEBUG */
+
+  // Stop doing feedback...
+
+  UpdatePage(GL_FALSE);
+
+  // Return an error if there was no feedback data used...
+
+  if (bboxes == NULL)
+    return (GLP_NO_FEEDBACK);
+
+  // Loop through all bounding boxes and primitives...
+
+#ifdef DEBUG
+  cout << "EndPage() - writing page.\n" << flush;
+#endif /* DEBUG */
+
+  glGetIntegerv(GL_VIEWPORT, viewport);
+
+  page_count ++;
+  *outfile << "%%Page: " << page_count << "\n";
+  *outfile << "%%PageBoundingBox: 0 0 " << viewport[2] << " " << viewport[3] << "\n";
+
+  *outfile << "gsave\n";
+
+  if (options & GLP_FIT_TO_PAGE)
+    {
+      *outfile << "% Fit to page...\n";
+      *outfile << "newpath clippath pathbbox\n";
+      *outfile << "/URy exch def\n";
+      *outfile << "/URx exch def\n";
+      *outfile << "/LLy exch def\n";
+      *outfile << "/LLx exch def\n";
+      *outfile << "/Width  URx LLx sub 0.005 sub def\n";
+      *outfile << "/Height URy LLy sub 0.005 sub def\n";
+      *outfile << "LLx LLy translate\n";
+      *outfile << "/XZoom Width " << viewport[2] << " div def\n";
+      *outfile << "/YZoom Height " << viewport[3] << " div def\n";
+      *outfile << "Width YZoom mul Height XZoom mul gt {\n";
+      *outfile << "	90 rotate\n";
+      *outfile << "	0 Width neg translate\n";
+      *outfile << "	Width Height /Width exch def /Height exch def\n";
+      *outfile << "	/XZoom Width " << viewport[2] << " div def\n";
+      *outfile << "	/YZoom Height " << viewport[3] << " div def\n";
+      *outfile << "} if\n";
+      *outfile << "XZoom YZoom gt {\n";
+      *outfile << "	/YSize Height def\n";
+      *outfile << "	/XSize " << viewport[2] << " YZoom mul def\n";
+      *outfile << "	/Scale YZoom def\n";
+      *outfile << "} {\n";
+      *outfile << "	/XSize Width def\n";
+      *outfile << "	/YSize " << viewport[3] << " XZoom mul def\n";
+      *outfile << "	/Scale XZoom def\n";
+      *outfile << "} ifelse\n";
+
+      *outfile << "Width  XSize sub 2 div\n";
+      *outfile << "Height YSize sub 2 div translate\n";
+      *outfile << "Scale Scale scale\n";
+      *outfile << "\n";
+    };
+
+  // init background to white
+  b_rgba[0]=b_rgba[1]=b_rgba[2]=1.0;
+
+  if (options & GLP_DRAW_BACKGROUND)
+    {
+      if (feedmode == GL_RGBA || colorsize == 0)
+	glGetFloatv(GL_COLOR_CLEAR_VALUE, b_rgba);
+      else
+	{
+	  glGetIntegerv(GL_INDEX_CLEAR_VALUE, &i);
+	  b_rgba[0] = colormap[i][0];
+	  b_rgba[1] = colormap[i][1];
+	  b_rgba[2] = colormap[i][2];
+	};
+
+      *outfile << "% Draw background...\n";
+      *outfile << b_rgba[0] << " " << b_rgba[1] << " " << b_rgba[2] << " C\n";
+      *outfile << "newpath\n";
+      *outfile << "	0 0 moveto\n";
+      *outfile << "	" << viewport[2] << " 0 lineto\n";
+      *outfile << "	" << viewport[2] << " " << viewport[3] << " lineto\n";
+      *outfile << "	0 " << viewport[3] << " lineto\n";
+      *outfile << "closepath fill\n";
+      *outfile << "\n";
+    };
+
+  *outfile << "%-- Images first\n";
+  for (int inum=0; inum<nimages; inum++){
+    *outfile << ps_image(&(images[inum]));
+  }
+
+
+  for (bbox = bboxes; bbox != NULL; bbox = bbox->next)
+    {
+#ifdef DEBUG
+      cout << "EndPage() - writing bbox (" << bbox->min[0] << ","
+	   << bbox->min[1] << "," << bbox->min[2] << ") to (" << bbox->max[0] << ","
+	   << bbox->max[1] << "," << bbox->max[2] << ").\n" << flush;
+#endif /* DEBUG */
+
+      for (prim = bbox->primitives; prim != NULL; prim = prim->next)
+	{
+#ifdef DEBUG
+	  cout << "EndPage() - primitive";
+	  for (i = 0; i < prim->num_verts; i ++)
+	    cout << " (" << prim->verts[i].xyz[0] << ", "
+		 << prim->verts[i].xyz[1] << ", "
+		 << prim->verts[i].xyz[2] << ")";
+	  cout << "\n";
+#endif /* DEBUG */
+
+	  switch (prim->num_verts)
+	    {
+	    case 1 : /* Point */
+	      if (prim->primtype==GL_POINT_TOKEN){
+		*outfile << prim->verts[0].xyz[0] << " " <<
+		  prim->verts[0].xyz[1] << " " <<
+		  prim->state.pointsize/2.0 << " " <<
+		  prim->verts[0].rgba[0] << " " <<
+		  prim->verts[0].rgba[1] << " " <<
+		  prim->verts[0].rgba[2] << " P\n";
+
+	      } else if (prim->primtype==GL_DRAW_PIXEL_TOKEN){
+// 		if (imagenum<nimages){
+// 		  *outfile << ps_image(&(images[imagenum]));
+// 		  imagenum++;
+// 		} else {
+// 		  cerr << "---- Illegal imagenum!:" << imagenum << endl;
+// 		}
+	      }
+	      break;
+	    case 2 : /* Line */
+	      if (prim->primtype==GL_LINE_RESET_TOKEN){
+		// set line-dash
+		if (prim->state.linedash){
+		  *outfile << "% ---- Set new dashpattern\n";
+		  *outfile <<
+		    ps_dash(prim->state.dashpattern,
+			    prim->state.dashrepeat) << " setdash\n";
+		} else {
+		  *outfile << "% ---- Reset dashpattern\n";
+		  *outfile << "[] 0 setdash\n";
+		}
+		// set linewidth
+		*outfile << int(prim->state.linewidth) << " setlinewidth\n";
+	      }
+	      if (prim->state.shade)
+		{
+		  *outfile << prim->verts[1].xyz[0] << " " <<
+		    prim->verts[1].xyz[1] << " " <<
+		    prim->verts[1].rgba[0] << " " <<
+		    prim->verts[1].rgba[1] << " " <<
+		    prim->verts[1].rgba[2] << " " <<
+		    prim->verts[0].xyz[0] << " " <<
+		    prim->verts[0].xyz[1] << " " <<
+		    prim->verts[0].rgba[0] << " " <<
+		    prim->verts[0].rgba[1] << " " <<
+		    prim->verts[0].rgba[2] << " SL\n";
+		}
+	      else
+		{
+		  *outfile << prim->verts[1].xyz[0] << " " <<
+		    prim->verts[1].xyz[1] << " " <<
+		    prim->verts[0].xyz[0] << " " <<
+		    prim->verts[0].xyz[1] << " " <<
+		    prim->verts[0].rgba[0] << " " <<
+		    prim->verts[0].rgba[1] << " " <<
+		    prim->verts[0].rgba[2] << " L\n";
+		}
+	      break;
+	    case 3 : /* Triangle */
+	      if (prim->state.shade)
+		{
+		  *outfile << prim->verts[2].xyz[0] << " " <<
+		    prim->verts[2].xyz[1] << " " <<
+		    prim->verts[2].rgba[0] << " " <<
+		    prim->verts[2].rgba[1] << " " <<
+		    prim->verts[2].rgba[2] << " " <<
+		    prim->verts[1].xyz[0] << " " <<
+		    prim->verts[1].xyz[1] << " " <<
+		    prim->verts[1].rgba[0] << " " <<
+		    prim->verts[1].rgba[1] << " " <<
+		    prim->verts[1].rgba[2] << " " <<
+		    prim->verts[0].xyz[0] << " " <<
+		    prim->verts[0].xyz[1] << " " <<
+		    prim->verts[0].rgba[0] << " " <<
+		    prim->verts[0].rgba[1] << " " <<
+		    prim->verts[0].rgba[2] <<
+		    " ST\n";
+		}
+	      else
+		{
+		  *outfile << prim->verts[2].xyz[0] << " " <<
+		    prim->verts[2].xyz[1] << " " <<
+		    prim->verts[1].xyz[0] << " " <<
+		    prim->verts[1].xyz[1] << " " <<
+		    prim->verts[0].xyz[0] << " " <<
+		    prim->verts[0].xyz[1] << " " <<
+		    prim->verts[0].rgba[0] << " " <<
+		    prim->verts[0].rgba[1] << " " <<
+		    prim->verts[0].rgba[2] <<
+		    " T\n";
+		}
+	      break;
+	    };
+	};
+    };
+
+  *outfile << "grestore\n";
+  *outfile << "showpage\n";
+  *outfile << "%%EndPage\n";
+  *outfile << flush;
+
+  // Delete everything from the bounding box and primitive lists...
+
+  delete_all();
+
+#ifdef DEBUG
+  cout << "EndPage() - done.\n" << flush;
+#endif /* DEBUG */
+
+  return (GLP_SUCCESS);
+}
+
+
+//
+// End of "$Id: 2000-04-19_file.cc 4306 2013-12-17 12:55:57Z juergens $".
+//

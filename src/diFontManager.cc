@@ -42,11 +42,15 @@
 #include <glText/glTextTTTexture.h>
 #include <glText/glTextQtTexture.h>
 
+#include <QString>
 #include "diLocalSetupParser.h"
 #include <puTools/miSetupParser.h>
 
 #define MILOGGER_CATEGORY "diana.FontManager"
 #include <miLogger/miLogging.h>
+
+#include <QTextCodec>
+#include <QString>
 
 using namespace miutil;
 using namespace std;
@@ -150,7 +154,7 @@ bool FontManager::parseSetup()
   const std::string key_psyscale = "ps-scale-y";
   const std::string key_fontpath = "fontpath";
 
-  defaults[key_bitmapfont] = "Helvetica";
+  defaults[key_bitmapfont] = "Arial";
   defaults[key_scalefont] = "Arial";
   defaults[key_metsymbolfont] = "Symbol";
 
@@ -351,7 +355,26 @@ bool FontManager::drawStr(const char* s, const float x, const float y,
 {
   if (!current_engine)
     return false;
-  return current_engine->drawStr(s, x, y, a);
+
+//  METLIBS_LOG_WARN("face " << current_engine->getFontName( 0 ) );
+//  current_engine->CharMap(ft_encoding_unicode);
+
+  std::string tmps = s;
+
+  // Convert to latin1 from utf8.
+  QString tmpString = QString::fromUtf8(tmps.c_str());
+  QTextCodec * codec = QTextCodec::codecForName("Latin-1");
+//  QTextCodec * codec = QTextCodec::codecForName("UTF-8");
+  QTextCodec::setCodecForCStrings(codec);
+  tmps = tmpString.toStdString();
+//  cerr << tmps << endl;
+//   METLIBS_LOG_WARN("c " << tmps.c_str()  );
+  // restore codec
+  codec = QTextCodec::codecForName("UTF-8");
+  QTextCodec::setCodecForCStrings(codec);
+  METLIBS_LOG_WARN("c " << tmps.c_str()  );
+
+  return current_engine->drawStr( tr(tmps.c_str()), x, y, a);
 }
 
 // Metric commands

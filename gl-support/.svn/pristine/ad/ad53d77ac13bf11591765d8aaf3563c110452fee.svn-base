@@ -1,0 +1,17 @@
+Source: metlibs-gl-miftgl
+Priority: optional
+Maintainer: Borge Moe <borge.moe@met.no>
+Build-Depends:  debhelper (>= 7), autotools-dev, g++,
+  autoconf (>=2.61), automake (>= 1.10), libtool (>= 1.5),
+  libgl1-mesa-dev, libglu1-mesa-dev, libfreetype6-dev,
+  pkg-config
+Standards-Version: 3.7.3
+Section: libs
+
+Package: metlibs-miftgl-dev
+Section: libdevel
+Architecture: any
+Depends: libfreetype6-dev, libgl1-mesa-dev, libglu1-mesa-dev, ${misc:Depends}
+Description: miFTGL.
+ metlibs miFTGL.
+

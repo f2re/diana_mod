@@ -1,0 +1,31 @@
+# $Id$
+
+pkgname = glp
+
+lib_LTLIBRARIES = libglp.la
+
+libglp_la_SOURCES = \
+	context.cc \
+	file.cc \
+	svgdocument.cc
+
+
+pkg_includedir = ${includedir}/glp
+
+pkg_include_HEADERS = \
+	GLP.h \
+	glpfile.h \
+	svgdocument.h
+
+libglp_la_CPPFLAGS = ${OPENGL_CPPFLAGS}
+libglp_la_LDFLAGS  = ${OPENGL_LDFLAGS} ${VERSION_INFO}
+
+
+if ENABLE_SHARED_LIBRARY
+libglp_la_LIBADD = \
+	-lGL \
+	${OPENGL_LIBS}
+endif
+
+
+INSTALL=install -p # tells install to preserve timestamp

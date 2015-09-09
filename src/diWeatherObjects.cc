@@ -266,8 +266,8 @@ bool WeatherObjects::readEditDrawFile(const std::string& fn, const Area& newArea
       continue;
 
     // The font Helvetica is not supported if X-fonts are not enabled, use BITMAPFONT defined in setup
-    if (miutil::contains(str, "Helvetica")) {
-      miutil::replace(str, "Helvetica","BITMAPFONT");
+    if (miutil::contains(str, "Arial")) {
+      miutil::replace(str, "Arial","BITMAPFONT");
     }
     // check if this is a LABEL string
     if (diutil::startswith(str, "LABEL")) {

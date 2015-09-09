@@ -37,6 +37,7 @@
 #include <diObsAscii.h>
 #include <diObsPlot.h>
 #include <diObsMetaData.h>
+#include <QString>
 #include "diUtilities.h"
 
 #include <puTools/miStringFunctions.h>
@@ -372,12 +373,16 @@ void ObsAscii::decodeData()
 
     float value;
     std::string text;
+//    QString ts;
     if (getColumnValue("x", pstr, value))
       obsData.xpos = value;
     if (getColumnValue("y", pstr, value))
       obsData.ypos = value;
-    if (getColumnValue("Name", pstr, text))
+    if (getColumnValue("Name", pstr, text)){
+//      ts=QString::fromStdString(text);
+//      METLIBS_LOG_WARN("obsData " << text );
       obsData.id = text;
+    }
     if (getColumnValue("ff", pstr, value))
       obsData.fdata["ff"] = knots ? diutil::knots2ms(value) : value;
     if (getColumnValue("dd", pstr, value))

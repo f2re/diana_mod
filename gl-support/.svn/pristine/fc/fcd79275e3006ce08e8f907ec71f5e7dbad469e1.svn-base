@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: glText
+Description: The glText Library
+Version: @VERSION@
+Requires: miFTGL >= 3.0.0 , glp >= 3.0.0
+Libs: -L${libdir} -lglText @QT4_LDFLAGS@  @QT4_LIBS@
+Cflags: -I${includedir} @QT4_CPPFLAGS@

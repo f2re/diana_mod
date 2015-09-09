@@ -1,0 +1,104 @@
+//
+// "$Id$"
+//
+//   Header file for the GLPfile class for the OpenGL printing toolkit.
+//
+//   The GLP library is distributed under the terms of the GNU Library
+//   General Public License which is described in the file "COPYING.LIB".
+//   If you use this library in your program, please include a line reading
+//   "OpenGL Printing Toolkit by Michael Sweet" in your version or copyright
+//   output.
+//
+// Revision History:
+//
+//   $Log$
+//   Revision 1.4  2007/07/27 12:12:34  juergens
+//   standarised include-statements
+//
+//   Revision 1.3  2005/12/12 14:10:01  audunc
+//   make eps-output more Adobe-friendly with new location for %%BoundingBox
+//
+//   Revision 1.2  2005/02/21 10:59:15  audunc
+//   Added support for resetting state variables for multiple plots per page
+//
+//   Revision 1.1  2004/09/08 12:48:14  juergens
+//   *** empty log message ***
+//
+//
+//   Revision 1.3  2000/04/27  audun c
+//   Added support for line-width and -dashpattern, images,
+//   point-size and triangle stippling pattern
+//
+//   Revision 1.2  1996/07/13  12:52:02  mike
+//   Changed default print options to include drawing of background.
+//
+//   Revision 1.1  1996/06/27  03:07:13  mike
+//   Initial revision
+//
+
+#ifndef _GL_GLPFILE_H_
+#  define _GL_GLPFILE_H_
+
+//
+// Include necessary headers.
+//
+
+#include "GLP.h"
+#include <string>
+
+//
+// The Adobe PostScript file output class for GLP.  Basically, we just
+// add file and page count members and define our own constructor,
+// destructor, and 'EndPage()' functions.
+//
+
+class GLPfile : public GLPcontext	//// GLPfile class
+{
+protected:
+  int		page_count;	// Page count
+  std::fstream	*outfile;	// Output file
+  float         currlw;         // current linewidth
+  bool          curr_colinuse;  // current colour in use
+  GLPrgba       curr_colour;    // current colour
+  bool          dashinuse;      // dash pattern in use
+  unsigned int  curr_pattern;   // current dash pattern
+  int           curr_repeat;    // current dash repeat
+  bool          epsf;           // make encapsulated postscript
+  int           clipstack;      // number of clippings on stack
+
+  void Write_Header();                      // make ps header
+  void Write_Prolog();                      // make ps prolog
+  void Reset();
+
+  std::string ps_dash(unsigned int,int);                 // ps dash-pattern
+  std::string ps_line_properties(GLPprimitive*); // ps linewidth+pattern
+  std::string ps_image(const GLPimage*);         // ps rgb(a)-image
+  std::string ps_masked_triangle(GLPprimitive*,  // ps masked triangle
+			    GLint []);
+  std::string ps_pattern_triangle(GLPprimitive*, // ps patterned triangle
+			     int,float[],
+			     float,float);
+  std::string ps_triangle(GLPprimitive*, // generic ps triangle-code
+		     GLint []);
+  std::string ps_colour(GLPprimitive*); // flat-shading colour routine
+  std::string ps_setfont(GLPtext&);     // set new font
+  std::string ps_definefont(std::string);    // define font
+  std::string ps_remove_clippath();     // remove a clippath
+  std::string ps_clippath(GLPclippath&);// add a clippath
+
+public:
+  GLPfile(char *print_name,
+	  int  print_options = GLP_FIT_TO_PAGE | GLP_DRAW_BACKGROUND,
+	  int  print_size = 0,
+	  std::map<std::string,std::string> *mc = 0,
+	  bool makeepsf = false);
+  ~GLPfile();
+
+  int EndPage();
+};
+
+#endif // !_GL_GLPFILE_H_
+
+//
+// End of "$Id$".
+//

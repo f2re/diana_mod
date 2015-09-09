@@ -56,6 +56,8 @@
 #define MILOGGER_CATEGORY "diana.main_gui"
 #include <miLogger/miLogging.h>
 
+#include <QTextCodec>
+
 using namespace std;
 using namespace miutil;
 
@@ -83,6 +85,9 @@ int main(int argc, char **argv)
 {
   cout << argv[0] << " : DIANA version: " << VERSION << "  build: "
       << build_string << endl;
+  //UTF=8 support
+  QTextCodec * codec = QTextCodec::codecForName("UTF-8");
+  QTextCodec::setCodecForCStrings(codec);
 
 #if defined(Q_WS_QWS)
   QApplication a(argc, argv, QApplication::GuiServer);
