@@ -42,7 +42,6 @@
 #include <deque>
 #include <memory>
 
-
 class ObsPlot;
 class MapPlot;
 class AnnotationPlot;
@@ -146,13 +145,6 @@ private:
   bool movemap; //move event
   bool spacePressed; //for rotate map
   bool keepcurrentarea;
-
-  struct obsOneTime {
-    std::vector<ObsPlot*> vobsOneTime; // vector of obs plots, same time
-  };
-  std::vector<obsOneTime> vobsTimes;   // vector of structs, different times
-  int obsnr; //which obs time
-  int obsTimeStep;
 
   std::vector<PlotElement> plotelements;
 
@@ -269,6 +261,8 @@ public:
   void getPlotTime(std::string&);
   /// return current plottime
   void getPlotTime(miutil::miTime&);
+  /// return referencetime of first FieldPlot
+  miutil::miTime getFieldReferenceTime();
   /// return data times (fields,images, observations, objects and editproducts)
   void getPlotTimes(std::map<std::string, std::vector<miutil::miTime> >& times,
       bool updateSources = false);
@@ -291,10 +285,6 @@ public:
   std::string getObsPopupText(int x, int y);
    ///plot next/prev set of observations(PageUp/PageDown)
   void nextObs(bool next);
-  ///in edit mode: change obs time, leave the rest unchanged
-  void obsTime(bool forward, EventResult& res);
-  ///sets the step used in obsTime()
-  void obsStepChanged(int step);
 
   //Area
   ///put area into list of area objects
@@ -395,7 +385,6 @@ public:
 
   /// send one keyboard event
   void sendKeyboardEvent(QKeyEvent* ke, EventResult& res);
-
 
   enum AreaNavigationCommand {
     ANAV_HOME,

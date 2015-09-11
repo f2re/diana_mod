@@ -740,7 +740,6 @@ std::vector<float*> FieldPlot::prepareVectors(float* x, float* y)
     u = tmpfields[0]->data;
     v = tmpfields[1]->data;
     int npos = fields[0]->area.gridSize();
-
     if (!getStaticPlot()->ProjToMap(tmpfields[0]->area, npos, x, y, u, v)) {
       return uv;
     }

@@ -1,15 +1,17 @@
 
 AUTOMAKE_OPTIONS = subdir-objects
-SUBDIRS = . test/gtest test
+SUBDIRS = miRaster diField .
 
 # libexecdiana contains "exec" so that automake uses install-exec
 libexecdiana_LTLIBRARIES = libdiana.la
-libexecdianadir= $(pkglibdir)/@PVERSION@
 
 bin_PROGRAMS = bdiana
 
 if WITH_GUI
 bin_PROGRAMS += diana.bin
+libexecdianadir= $(pkglibdir)/@PVERSION@
+else
+libexecdianadir= $(libdir)
 endif # WITH_GUI
 
 # convenience for developers using a non-standard $(prefix)
@@ -120,6 +122,7 @@ libdiana_la_SOURCES += \
 
 libdiana_la_CPPFLAGS = -Ivcross_v2 -Ivcross_qt
 libdiana_la_LIBADD = \
+	$(BOOST_DATE_TIME_LIBS) \
 	$(BOOST_REGEX_LIBS) $(BOOST_SYSTEM_LIBS)
 
 libdiana_la_QTSOURCES = diManager.cc \
@@ -223,9 +226,13 @@ diana_bin_QTSOURCES += \
 	vcross_qt/qtVcrossInterface.cc \
 	vcross_qt/qtVcrossLayerBar.cc \
 	vcross_qt/qtVcrossLayerButton.cc \
+	vcross_qt/qtVcrossLayerList.cc \
 	vcross_qt/qtVcrossSetupDialog.cc \
 	vcross_qt/qtVcrossWindow.cc \
 	vcross_qt/qtVcrossAddPlotDialog.cc \
+	vcross_qt/qtVcrossModelPage.cc \
+	vcross_qt/qtVcrossReftimePage.cc \
+	vcross_qt/qtVcrossReplaceModelDialog.cc \
 	vcross_qt/qtVcrossStyleDialog.cc \
 	vcross_qt/qtVcrossStyleWidget.cc \
 	vcross_qt/VcrossQtWidget.cc \
@@ -233,6 +240,9 @@ diana_bin_QTSOURCES += \
 
 diana_bin_QTFORMS = \
 	vcross_qt/vcross_plot_add_dialog.ui \
+	vcross_qt/vcross_modelpage.ui \
+	vcross_qt/vcross_reftimepage.ui \
+	vcross_qt/vcross_replace_model_dialog.ui \
 	vcross_qt/vcross_style_dialog.ui \
 	vcross_qt/vcross_style_widget.ui \
 	vcross_qt/vcross_window.ui \
@@ -421,7 +431,17 @@ noinst_HEADERS += \
 	vcross_v2/VcrossQtPlot.h \
 	vcross_v2/VcrossQtUtil.h \
 	vcross_v2/VcrossQtAxis.h \
+	vcross_qt/qtVcrossInterface.h \
+	vcross_qt/qtVcrossLayerBar.h \
+	vcross_qt/qtVcrossLayerButton.h
+	src/vcross_qt/qtVcrossLayerList.h \
+	vcross_qt/qtVcrossModelPage.h \
+	vcross_qt/qtVcrossReftimePage.h \
+	src/vcross_qt/qtVcrossReplaceModelDialog.h \
+	vcross_qt/qtVcrossSetup.h \
 	vcross_qt/qtVcrossSetupDialog.h \
+	vcross_qt/qtVcrossStyleDialog.h \
+	vcross_qt/qtVcrossStyleWidget.h \
 	vcross_qt/VcrossQtWidget.h \
 	vcross_qt/qtVcrossWindow.h \
 	vcross_qt/qtVcrossSetup.h 
@@ -580,37 +600,39 @@ diana_bin_xpm_SOURCES= active_object.xpm \
 	weather_storm.xpm
 
 libdiana_la_CPPFLAGS += \
-	$(DIFIELD_CPPFLAGS) \
-	$(MIRASTER_CPPFLAGS) \
-	$(PUCTOOLS_CPPFLAGS) \
+	${FIMEX_CPPFLAGS} \
+	$(METLIBS_CPPFLAGS) \
 	$(EMOS_CPPFLAGS) \
-	$(PUDATATYPES_CPPFLAGS) \
 	$(SHP_CPPFLAGS) \
 	$(CURL_CPPFLAGS) \
 	$(PNG_CPPFLAGS) \
-	$(UU_CPPFLAGS)
+	${GEOTIFF_CPPFLAGS} \
+	$(TIFF_CPPFLAGS) \
+	$(UDUNITS_CPPFLAGS)
 
 libdiana_la_LDFLAGS = \
-	$(DIFIELD_LDFLAGS) \
-	$(MIRASTER_LDFLAGS) \
-	$(PUCTOOLS_LDFLAGS) \
+	${FIMEX_LDFLAGS} \
+	$(METLIBS_LDFLAGS) \
 	$(EMOS_LDFLAGS) \
-	$(PUDATATYPES_LDFLAGS) \
 	$(SHP_LDFLAGS) \
 	$(CURL_LDFLAGS) \
 	$(PNG_LDFLAGS) \
-	$(UU_LDFLAGS)
+	${GEOTIFF_LDFLAGS} \
+	$(TIFF_LDFLAGS) \
+	$(UDUNITS_LDFLAGS)
 
 libdiana_la_LIBADD += \
-	$(DIFIELD_LIBS) \
-	$(MIRASTER_LIBS) \
-	$(PUCTOOLS_LIBS) \
+	miRaster/libmiRaster.la \
+	diField/libdiField.la \
+	${FIMEX_LIBS} \
+	$(METLIBS_LIBS) \
 	$(EMOS_LIBS) $(FORTRAN_LIBS) \
-	$(PUDATATYPES_LIBS) \
 	$(SHP_LIBS) \
 	$(CURL_LIBS) \
 	$(PNG_LIBS) \
-	$(UU_LIBS)
+	${GEOTIFF_LIBS} \
+	$(TIFF_LIBS) \
+	$(UDUNITS_LIBS)
 
 # Additional source code for SMHI support
 if WITH_SMHI
@@ -636,6 +658,8 @@ libdiana_la_SOURCES += \
 	diGEOtiff.cc
 noinst_HEADERS += \
 	diGEOtiff.h
+libdiana_la_LDFLAGS += ${GEOTIFF_LDFLAGS} ${BOOST_THREAD_LDFLAGS}
+libdiana_la_LIBADD += ${GEOTIFF_LIBS} ${BOOST_THREAD_LIBS}
 endif
 
 # Additional source code for HDF5 support
@@ -645,6 +669,8 @@ libdiana_la_SOURCES += \
 	diHDF5.cc
 noinst_HEADERS += \
 	diHDF5.h
+libdiana_la_LDFLAGS += ${HDF5_LDFLAGS}
+libdiana_la_LIBADD += ${HDF5_LIBS}
 endif
 
 # Additional source code for observation buffers
@@ -692,7 +718,8 @@ libdiana_la_LDFLAGS += -version-number @PVERSION_MAJOR@:@PVERSION_MINOR@:@PVERSI
 language_sources=$(top_srcdir)/share/diana/lang/diana_no.ts \
 	$(top_srcdir)/share/diana/lang/diana_es.ts \
 	$(top_srcdir)/share/diana/lang/diana_ru.ts \
-	$(top_srcdir)/share/diana/lang/diana_sv.ts
+	$(top_srcdir)/share/diana/lang/diana_sv.ts \
+	$(top_srcdir)/share/diana/lang/diana_en.ts
 
 languagedir= $(datarootdir)/diana/@PVERSION@/lang
 nodist_language_DATA=$(language_sources:.ts=.qm)
@@ -701,6 +728,7 @@ CLEANFILES += $(nodist_language_DATA)
 
 lupdate:
 	$(LUPDATE4) $(diana_bin_QTSOURCES:%=$(srcdir)/%) \
+	    $(srcdir)/qtUtility.cc \
 	    $(diana_bin_QTFORMS:%=$(srcdir)/%) \
 	    -ts $(language_sources)
 .PHONY: lupdate
@@ -734,30 +762,18 @@ diana_bin_SOURCES += \
 
 diana_bin_CPPFLAGS = \
 	-I $(builddir)/vcross_qt \
-	$(FIMEX_CPPFLAGS) \
-	$(QUTILITIES_CPPFLAGS) \
-	$(COSERVER_CPPFLAGS) \
-        $(FTGL_CPPFLAGS) \
-        $(GLTEXT_CPPFLAGS) \
-        $(GLU_CPPFLAGS) \
+	${FIMEX_CPPFLAGS} \
+	$(METLIBSUI_CPPFLAGS) \
 	$(QT4_CPPFLAGS)
 
 diana_bin_LDFLAGS = \
-	$(FIMEX_LDFLAGS) \
-	$(QUTILITIES_LDFLAGS) \
-	$(COSERVER_LDFLAGS) \
-        $(FTGL_LDFLAGS) \
-        $(GLTEXT_LDFLAGS) \
-        $(GLU_LDFLAGS) \
+	${FIMEX_LDFLAGS} \
+	$(METLIBSUI_LDFLAGS) \
 	$(QT4_LDFLAGS)
 
 diana_bin_LDADD = \
-	$(FIMEX_LIBS) \
-	$(QUTILITIES_LIBS) \
-	$(COSERVER_LIBS) \
-        $(FTGL_LIBS) \
-        $(GLTEXT_LIBS) \
-        $(GLU_LIBS) \
+	${FIMEX_LIBS} \
+	$(METLIBSUI_LIBS) \
 	$(QT4_LIBS) \
 	libdiana.la
 
@@ -774,23 +790,31 @@ diana_bin_CPPFLAGS += -DUSE_XLIB
 diana_bin_LDADD += -lX11
 endif # WITH_XLIB
 
-# Generated header
-main_gui.cc: diBuild.h
-diBuild.h:
-	@if [ -s $@ ]; then \
-		olddate=`grep build_string $@ | cut -f2 -d\"`; \
+# generate version info header
+BUILT_SOURCES += diBuild.cc
+CLEANFILES += diBuild.cc diBuild.cc.tmp
+
+libdiana_la_SOURCES += diBuild.cc
+diBuild.cc: diBuild.cc.tmp
+	@if cmp -s $@ $< ; then \
+	    echo "UNCHANGED $@"; \
 	else \
-		olddate="firsttime"; \
-	fi; \
-	today=`date +%Y-%m-%d`; \
-	if [ ! x$$olddate = x$$today ]; then \
-	  	echo '#define build_string "'$$today'"' >$@ ; \
-	  	echo "UPDATED $@ $$today"; \
-	else \
-	  	echo "UNCHANGED $@ $$olddate"; \
+	    cp -f $< $@ ; \
+	    echo "UPDATED $@:"; \
+	    cat $@ ; \
 	fi
 
-CLEANFILES += diBuild.h
+diBuild.cc.tmp:
+	@today=`date +%Y-%m-%d` ; \
+	if git --git-dir="$(top_srcdir)/.git" --work-tree="$(top_srcdir)" status > /dev/null; then \
+	    commit=`git --git-dir="$(top_srcdir)/.git" --work-tree="$(top_srcdir)" describe --abbrev=40 --dirty --always`; \
+	else \
+	    commit="unknown"; \
+	fi; \
+	echo "#include <diBuild.h>" > $@ ; \
+	echo 'const char diana_build_string[] = "'$$today'";'  >> $@ ; \
+	echo 'const char diana_build_commit[] = "'$$commit'";' >> $@
+.PHONY: diBuild.cc.tmp
 
 ########################################################################
 ########################################################################

@@ -85,7 +85,7 @@ public:
   std::vector<miutil::miTime> getFieldTime(std::vector<FieldRequest>& request, bool updateSources=false);
 
   /// return all field groups for one model/file (to FieldDialog)
-  void getFieldGroups(const std::string& modelName, std::string refTime, bool plotGroups, std::vector<FieldGroupInfo>& vfgi);
+  void getFieldGroups(const std::string& modelName, std::string refTime, bool plotdefienitions, std::vector<FieldGroupInfo>& vfgi);
 
   ///return referencetime given by refoffset and refhour or last referencetime for given model
   std::string getBestFieldReferenceTime(const std::string& model, int refOffset, int refHour);
@@ -96,6 +96,8 @@ public:
   /// Returns the available times for the selected models and fields.
   std::vector<miutil::miTime> getFieldTime(const std::vector<std::string>& pinfos,
       bool updateSources=false);
+
+  miutil::miTime getFieldReferenceTime(const std::string& pinfo);
 
   /// Returns the union or intersection of plot times from all pinfos.
   void getCapabilitiesTime(std::vector<miutil::miTime>& normalTimes,
@@ -122,7 +124,7 @@ private:
 
   bool splitDifferenceCommandString(const std::string& pin, std::string& fspec1, std::string& fspec2);
 
-  void parseString(std::string& pin, FieldRequest& fieldrequest, std::vector<std::string>& paramNames, std::string& plotName );
+  void parseString(const std::string& pin, FieldRequest& fieldrequest, std::vector<std::string>& paramNames, std::string& plotName );
 
   void flightlevel2pressure(FieldRequest& frq);
 

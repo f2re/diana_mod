@@ -122,7 +122,7 @@ void WeatherObjects::plot(DiGLPainter* gl, Plot::PlotOrder porder)
 
 bool WeatherObjects::changeProjection(const Area& newArea)
 {
-  //METLIBS_LOG_WARN("Change projection from " << itsArea.P() <<" to " << newArea.P());
+  METLIBS_LOG_SCOPE("Change projection from " << itsArea <<" to " << newArea);
 
   if (itsArea.P() == newArea.P())
     return false;
@@ -266,8 +266,8 @@ bool WeatherObjects::readEditDrawFile(const std::string& fn, const Area& newArea
       continue;
 
     // The font Helvetica is not supported if X-fonts are not enabled, use BITMAPFONT defined in setup
-    if (miutil::contains(str, "Arial")) {
-      miutil::replace(str, "Arial","BITMAPFONT");
+    if (miutil::contains(str, "Helvetica")) {
+      miutil::replace(str, "Helvetica","BITMAPFONT");
     }
     // check if this is a LABEL string
     if (diutil::startswith(str, "LABEL")) {

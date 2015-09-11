@@ -30,7 +30,7 @@
 #ifndef EDITITEM_POLYLINE_H
 #define EDITITEM_POLYLINE_H
 
-#include <QtGui> // ### include only relevant headers ... TBD
+#include <QObject>
 #include <diDrawingManager.h>
 #include "EditItems/edititembase.h"
 #include "EditItems/drawingpolyline.h"
@@ -52,6 +52,7 @@ private:
 
     virtual void mousePress(QMouseEvent *, bool &, bool *);
     virtual void mouseHover(QMouseEvent *, bool &, bool = false);
+    virtual void mouseMove(QMouseEvent *event, bool &repaintNeeded);
     virtual void keyPress(QKeyEvent *, bool &);
 
     virtual void incompleteMousePress(QMouseEvent *, bool &, bool &, bool &);
@@ -78,7 +79,8 @@ private:
 
 private slots:
     void addPoint();
-    void removePoint();
+    void removePoints();
+    void showTip();
 };
 
 } // namespace EditItem_PolyLine

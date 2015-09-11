@@ -52,12 +52,11 @@
 #include "diUtilities.h"
 #include "diWeatherArea.h"
 
+#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string_regex.hpp>
 #include <diField/diFieldManager.h>
 #include <puDatatypes/miCoordinates.h>
 #include <puTools/miStringFunctions.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string_regex.hpp>
 
 #include <QMouseEvent>
 
@@ -106,7 +105,6 @@ PlotModule::PlotModule()
   , movemap(false)
   , spacePressed(false)
   , keepcurrentarea(true)
-  , obsnr(0)
 {
   self = this;
   oldx = newx = oldy = newy = startx = starty = 0;
@@ -235,11 +233,8 @@ void PlotModule::prepareArea(const vector<string>& inp)
   Projection proj;
   Rectangle rect;
 
-
-
   const vector<std::string> tokens= miutil::split_protected(inp[0], '"','"'," ",true);
   for (size_t i=0; i<tokens.size(); i++){
-
     const vector<std::string> stokens= miutil::split(tokens[i], 1, "=");
     if (stokens.size() > 1) {
       const std::string key= miutil::to_lower(stokens[0]);
@@ -252,7 +247,6 @@ void PlotModule::prepareArea(const vector<string>& inp)
       } else if (key==key_proj){
         if ( proj.set_proj_definition(stokens[1]) ) {
           requestedarea.setP(proj);
-          //METLIBS_LOG_WARN("PROJECTION INIT: "<< proj);
         } else {
           METLIBS_LOG_WARN("Unknown proj definition: "<< stokens[1]);
         }
@@ -369,29 +363,15 @@ void PlotModule::prepareObs(const vector<string>& inp)
   for (size_t i = 0; i < vop.size(); i++)
     vop[i]->logStations();
   vop.clear();
-  for (size_t i = 0; i < vobsTimes.size(); i++)
-    diutil::delete_all_and_clear(vobsTimes[i].vobsOneTime);
-  vobsTimes.clear();
 
   for (size_t i = 0; i < inp.size(); i++) {
     ObsPlot *op = obsm->createObsPlot(inp[i]);
     if (op) {
       plotenabled.restore(op, op->getPlotInfo(3));
       op->setCanvas(mCanvas);
-
-      if (vobsTimes.empty()) {
-        obsOneTime ot;
-        vobsTimes.push_back(ot);
-      }
-
-      vobsTimes[0].vobsOneTime.push_back(op);
-      // vobsTimes[0].vobsOneTime[n] = vop[i];//forsiktig!!!!
-      //     FIXME alexanderb vop[i] may be undefined; assuming that vop[i] == op anyhow, therefore commented out
-
       vop.push_back(op);
     }
   }
-  obsnr = 0;
 }
 
 void PlotModule::prepareStations(const vector<string>& inp)
@@ -748,13 +728,9 @@ bool PlotModule::updatePlots()
   defineMapArea();
 
   // prepare data for observation plots
-  obsnr = 0;
   for (size_t i = 0; i < vop.size(); i++) {
     vop[i]->logStations();
-    vop[i] = vobsTimes[0].vobsOneTime[i];
   }
-  for (; vobsTimes.size() > 1; vobsTimes.pop_back())
-    diutil::delete_all_and_clear(vobsTimes.back().vobsOneTime);
   for (size_t i = 0; i < vop.size(); i++) {
     if (!obsm->prepare(vop[i], t)) {
       METLIBS_LOG_DEBUG("ObsManager returned false from prepare");
@@ -1073,7 +1049,6 @@ void PlotModule::plotOver(DiGLPainter* gl)
     gl->setLineStyle(staticPlot_->getBackContrastColour(), 2);
     gl->drawRect(pold.x(), pold.y(), pnew.x(), pnew.y());
   }
-
   //rotate line
   if ( rotatemap ){
       const XY pold = staticPlot_->PhysToMap(staticPlot_->GeoToPhys( XY(179,89.99) ));
@@ -1172,8 +1147,6 @@ void PlotModule::cleanup()
   std::vector<StationPlot*> stam_plots(stam->plots());
   diutil::delete_all_and_clear(stam_plots); // FIXME this does not clear anything in StationManager
 
-  for (; not vobsTimes.empty(); vobsTimes.pop_back())
-    diutil::delete_all_and_clear(vobsTimes.back().vobsOneTime);
   vop.clear();
 
   objm->clearObjects();
@@ -1297,7 +1270,7 @@ double PlotModule::getEntireWindowDistances(const bool horizontal){
 
 double PlotModule::getWindowDistances(const float& x, const float& y, const bool horizontal){
 
-  if ( !dorubberband && !rotatemap )
+  if ( !dorubberband && !rotatemap)
     return getEntireWindowDistances(horizontal);
 
   float flat1, flat3, flat4, flon1, flon3, flon4;
@@ -1423,6 +1396,16 @@ void PlotModule::getPlotTime(miTime& t)
   t = staticPlot_->getTime();
 }
 
+miutil::miTime PlotModule::getFieldReferenceTime()
+{
+  if (vfp.size() ){
+    std::string pinfo = vfp[0]->getPlotInfo();
+    return fieldplotm->getFieldReferenceTime(pinfo);
+  } else {
+    return miutil::miTime();
+  }
+}
+
 void PlotModule::getPlotTimes(map<string,vector<miutil::miTime> >& times,
     bool updateSources)
 {
@@ -1522,14 +1505,6 @@ bool PlotModule::setPlotTime(miTime& t)
 void PlotModule::updateObs()
 {
   // Update ObsPlots if data files have changed
-
-  //delete vobsTimes
-  for (size_t i = 0; i < vop.size(); i++)
-    vop[i] = vobsTimes[0].vobsOneTime[i];
-
-  for (; vobsTimes.size() > 1; vobsTimes.pop_back())
-    diutil::delete_all_and_clear(vobsTimes.back().vobsOneTime);
-  obsnr = 0;
 
   // if time of current vop[0] != splot.getTime() or  files have changed,
   // read files from disk
@@ -1738,105 +1713,6 @@ void PlotModule::nextObs(bool next)
     vop[i]->nextObs(next);
 }
 
-void PlotModule::obsTime(bool forward, EventResult& res)
-{
-  // This function changes the observation time one hour,
-  // and leaves the rest (fields, images etc.) unchanged.
-  // It saves the obsPlot object in the vector vobsTimes.
-  // This only works for vop[0], which is the only one used at the moment.
-  // This only works in edit modus
-  // vobsTimes is deleted when anything else are changed or edit modus are left
-
-  if (vop.empty())
-    return;
-  if (!editm->isInEdit())
-    return;
-
-  if (forward) {
-    if (obsnr > 20)
-      return;
-    obsnr++;
-  } else { // backward
-    if (obsnr == 0)
-      return;
-    obsnr--;
-  }
-
-  obsm->clearObsPositions();
-  miTime newTime = staticPlot_->getTime();
-  newTime.addHour(-1 * obsTimeStep * obsnr);
-
-  //log old stations
-  for (size_t i = 0; i < vop.size(); i++)
-    vop[i]->logStations();
-
-  //Make new obsPlot object
-  if (obsnr == int(vobsTimes.size())) {
-
-    obsOneTime ot;
-    for (size_t i = 0; i < vop.size(); i++) {
-      const std::string& pin = vop[i]->getInfoStr();
-      ObsPlot *op = obsm->createObsPlot(pin);
-      if (op) {
-        if (!obsm->prepare(op, newTime))
-          METLIBS_LOG_WARN("ObsManager returned false from prepare");
-      }
-      ot.vobsOneTime.push_back(op);
-    }
-    vobsTimes.push_back(ot);
-
-  } else {
-    for (size_t i = 0; i < vop.size(); i++)
-      vobsTimes[obsnr].vobsOneTime[i]->readStations();
-  }
-
-  //ask last plot object which stations was plotted,
-  //and tell this plot object
-  for (size_t i = 0; i < vop.size(); i++) {
-    vop[i] = vobsTimes[obsnr].vobsOneTime[i];
-  }
-
-  //update list of positions ( used in "PPPP-mslp")
-  obsm->updateObsPositions(vop);
-
-  std::string labelstr;
-  if (obsnr != 0) {
-    std::string timer = miutil::from_number(obsnr * obsTimeStep);
-    labelstr = "LABEL text=\"OBS -" + timer;
-    labelstr += "\" tcolour=black bcolour=red fcolour=red:150 ";
-    labelstr += "polystyle=both halign=center valign=top fontsize=18";
-  }
-  if (vop.size() > 0) {
-    vop[0]->setLabel(labelstr);
-  }
-
-  setAnnotations();
-}
-
-void PlotModule::obsStepChanged(int step)
-{
-  obsTimeStep = step;
-
-  int n = vop.size();
-  for (int i = 0; i < n; i++)
-    vop[i] = vobsTimes[0].vobsOneTime[i];
-
-  int m = vobsTimes.size();
-  for (int i = m - 1; i > 0; i--) {
-    int l = vobsTimes[i].vobsOneTime.size();
-    for (int j = 0; j < l; j++) {
-      delete vobsTimes[i].vobsOneTime[j];
-      vobsTimes[i].vobsOneTime.pop_back();
-    }
-    vobsTimes[i].vobsOneTime.clear();
-    vobsTimes.pop_back();
-  }
-
-  if (obsnr > 0)
-    obsnr = 0;
-
-  setAnnotations();
-}
 
 void PlotModule::trajPos(const vector<std::string>& vstr)
 {
@@ -2068,44 +1944,21 @@ void PlotModule::zoomOut()
   setMapAreaFromPhys(diutil::adjustedRectangle(getPhysRectangle(), dx, dy));
 }
 
-
-//keyboard event
-void PlotModule::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
-{
-   //if (ke->key() == Qt::Key_unknown) return;
-   // when SPACE is holded
-
-
-   if ((ke->isAutoRepeat() && ke->key() == Qt::Key_Space) ) {
-     spacePressed= true;
-   }else
-   if ( ke->key() == Qt::Key_Space)  { //(ke->type() == QEvent::KeyRelease &&
-     spacePressed= false;
-   }
-}
-
 // keyboard/mouse events
 void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
 {
   newx = me->x();
   newy = me->y();
 
-
   // ** mousepress
   if (me->type() == QEvent::MouseButtonPress) {
     oldx = me->x();
     oldy = me->y();
 
-
     if (me->button() == Qt::LeftButton) {
-
       if ( spacePressed ){
           movemap=true;
           dorubberband=false;
-          areaInsert(true);
-          staticPlot_->panPlot(true);
-          res.newcursor = paint_move_cursor;
-          return;
       } else{
           movemap=false;
           dorubberband = true;
@@ -2126,15 +1979,15 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
     }
 
     else if (me->button() == Qt::RightButton) {
-      //res.action = rightclick;
-      rotatemap=true;
+        //res.action = rightclick;
+        rotatemap=true;
 
-      //change to rotate maps
+        //change to rotate maps
 
-      res.savebackground = true;
-      res.background = true;
-      res.repaint = true;
-      return;
+        res.savebackground = true;
+        res.background = true;
+        res.repaint = true;
+        return;
     }
 
     return;
@@ -2161,6 +2014,17 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       res.repaint = true;
       res.newcursor = paint_move_cursor;
       return;
+    } else if ( movemap ){
+       const float dx = oldx - me->x(), dy = oldy - me->y();
+       setMapAreaFromPhys(diutil::movedRectangle(getPhysRectangle(), dx, dy));
+       oldx = me->x();
+       oldy = me->y();
+
+       res.action = quick_browsing;
+       res.background = true;
+       res.repaint = true;
+
+       return;
     }
 
   }
@@ -2175,57 +2039,37 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
     // minimum rubberband size for zooming (in pixels)
     const float rubberlimit = 15.;
 
-    if (me->button() == Qt::RightButton) { // rotate
-        x1 = oldx;
-        y1 = oldy;
-        x2 = me->x();
-        y2 = me->y();
+    if (me->button() == Qt::RightButton) { // zoom out
+        if (me->button() == Qt::RightButton) { // rotate
+           x1 = oldx;
+           y1 = oldy;
+           x2 = me->x();
+           y2 = me->y();
 
-      //end of popup
-      //res.action= rightclick;
+         //end of popup
+         //res.action= rightclick;
 
-        if (rotatemap){
-            float lat,lon,xmap,ymap;
-            int   h,w,nx,ny,nx1,ny1;
+           if (rotatemap){
+               float lat,lon;
 
-            PhysToGeo(me->x(),me->y(), lat,lon );
-            std::string rotmap=requestedarea.getAreaString();
-            //METLIBS_LOG_WARN("X " << me->x() <<" Y " << me->y() << ", lat:"<<lat << " lon:"<<lon<<" map:"<<rotmap );
-            boost::regex xRegEx("lon_0=(\\d+)");
-            std::string xFormatString("lon_0="+miutil::from_number( int(lon) ));
-            requestedarea.setAreaFromString(boost::regex_replace(rotmap, xRegEx, xFormatString, boost::match_default | boost::format_perl));
-            rotatemap=false;
+               PhysToGeo(me->x(),me->y(), lat,lon );
+               std::string rotmap=requestedarea.getAreaString();
+               //METLIBS_LOG_WARN("X " << me->x() <<" Y " << me->y() << ", lat:"<<lat << " lon:"<<lon<<" map:"<<rotmap );
+               boost::regex xRegEx("lon_0=(\\d+)");
+               std::string xFormatString("lon_0="+miutil::from_number( int(lon) ));
+               requestedarea.setAreaFromString(boost::regex_replace(rotmap, xRegEx, xFormatString, boost::match_default | boost::format_perl));
+               //METLIBS_LOG_WARN(requestedarea.getAreaString());
+               staticPlot_->setMapArea(requestedarea);
+               rotatemap=false;
+               METLIBS_LOG_WARN(diutil::adjustedRectangle(getPhysRectangle(), staticPlot_->getPhysWidth()*(-0.1), staticPlot_->getPhysHeight()*(-0.1)));
+               setMapAreaFromPhys(diutil::adjustedRectangle(getPhysRectangle(), 0, 0));
 
-            //get lat lon mouse coordinates (center of screen)
-            //me->x(),me->y()
-            PhysToMap(me->x(),me->y(),xmap,ymap);
-            //calculate screen size getMapSize
-            w=abs(int((staticPlot_->getMapSize().x2-staticPlot_->getMapSize().x1)*(0.4)));
-            h=abs(int((staticPlot_->getMapSize().y2-staticPlot_->getMapSize().y1)*(0.4)));
-
-            //left top
-            nx=xmap-w;
-            ny=ymap-h;
-            //bottom right
-            nx1=xmap+w;
-            ny1=ymap+h;
-
-            setMapAreaFromMap(diutil::adjustedRectangle(Rectangle(nx,ny,nx1,ny1),-0.2,-0.2));
-            staticPlot_->setMapArea(requestedarea);
-            res.repaint = true;
-            res.background = true;
-            return;
-        }
-
+               res.repaint = true;
+               res.background = true;
+               return;
+           }
 
     } else if (me->button() == Qt::LeftButton) {
-      if ( movemap )  {
-          staticPlot_->panPlot(false);
-          res.repaint = true;
-          res.background = true;
-          movemap=false;
-          return;
-      }
 
       x1 = oldx;
       y1 = oldy;
@@ -2241,9 +2085,8 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
         y2 = oldy;
       }
       if (fabsf(x2 - x1) > rubberlimit && fabsf(y2 - y1) > rubberlimit) {
-        if (dorubberband)
+        if (dorubberband || movemap)
           plotnew = true;
-
       } else {
         res.action = pointclick;
       }
@@ -2273,6 +2116,21 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
   else if (me->type() == QEvent::MouseButtonDblClick) {
     res.action = doubleclick;
   }
+}
+
+//keyboard event
+void PlotModule::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
+{
+   //if (ke->key() == Qt::Key_unknown) return;
+   // when SPACE is holded
+
+
+   if ((ke->isAutoRepeat() && ke->key() == Qt::Key_Space) ) {
+     spacePressed= true;
+   }else
+   if ( ke->key() == Qt::Key_Space)  { //(ke->type() == QEvent::KeyRelease &&
+     spacePressed= false;
+   }
 }
 
 void PlotModule::areaNavigation(PlotModule::AreaNavigationCommand anav, EventResult& res)

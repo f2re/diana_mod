@@ -401,11 +401,6 @@ vector<string> Controller::getFieldModels()
   return plotm->getFieldModels();
 }
 
-//obs time step changed in edit dialog
-void Controller::obsStepChanged(int step){
-  plotm->obsStepChanged(step);
-}
-
 // get name++ of current channels (with calibration)
 vector<string> Controller::getCalibChannels()
 {
@@ -595,11 +590,10 @@ void Controller::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
   // A more general way to override normal keypress behaviour is to query
   // the managers to find any that are in editing mode.
   for (PlotModule::managers_t::iterator it = plotm->managers.begin(); it != plotm->managers.end(); ++it) {
-    //if (it->second->isEnabled() && it->second->isEditing()) {
+//    if (it->second->isEnabled() && it->second->isEditing()) {
     if (it->second->isEnabled()){
-
       it->second->sendKeyboardEvent(ke, res);
-      if (it->second->hasFocus())
+      if (ke->isAccepted() || it->second->hasFocus())
         return;
     }
   }
@@ -612,9 +606,7 @@ void Controller::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
 
   // first check keys independent of mode
   //-------------------------------------
-
   plotm->sendKeyboardEvent(ke, res);
-
   if (ke->type() == QEvent::KeyPress){
     if (ke->key() == Qt::Key_PageUp or ke->key() == Qt::Key_PageDown) {
       const bool forward = ke->key() == Qt::Key_PageDown;
@@ -664,16 +656,6 @@ void Controller::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
       return;
     } else if (ke->key() == Qt::Key_F11){
       //    METLIBS_LOG_WARN("Show next plot (apply)");
-      return;
-      //####################################################################
-    } else if ((ke->key() == Qt::Key_Left && ke->modifiers() & Qt::ShiftModifier) ||
-        (ke->key() == Qt::Key_Right && ke->modifiers() & Qt::ShiftModifier) )
-    {
-      const bool forward = (ke->key() == Qt::Key_Left);
-      plotm->obsTime(forward,res);  // change observation time only
-      res.repaint= true;
-      res.background= true;
-      if (inEdit) res.savebackground= true;
       return;
       //####################################################################
     } else if (!(ke->modifiers() & Qt::ControlModifier) &&
@@ -885,6 +867,11 @@ std::string Controller::getBestFieldReferenceTime(const std::string& model, int 
   return fieldm->getBestReferenceTime(model, refOffset, refHour);
 }
 
+miutil::miTime Controller::getFieldReferenceTime()
+{
+  return plotm->getFieldReferenceTime();
+}
+
 void Controller::getFieldGroups(const std::string& modelName,
     std::string refTime,
     bool plotGroups,
@@ -910,11 +897,14 @@ MapDialogInfo Controller::initMapDialog(){
   return mapm.getMapDialogInfo();
 }
 
-bool Controller::MapInfoParser(std::string& str, MapInfo& mi, bool tostr)
+bool Controller::MapInfoParser(std::string& str, MapInfo& mi, bool tostr, bool map)
 {
   MapManager mapm;
   if (tostr){
-    str= mapm.MapInfo2str(mi);
+    if( map)
+      str= mapm.MapInfo2str(mi);
+    else
+      str= mapm.MapExtra2str(mi);
     return true;
   } else {
     PlotOptions a,b,c,d,e;
@@ -991,13 +981,6 @@ void Controller::findStations(int x, int y, bool add,
     vector<std::string>& station)
 {
   stam->findStations(x,y,add,name,id,station);
-}
-
-void Controller::getEditStation(int step,
-    std::string& name, int& id,
-    vector<std::string>& stations)
-{
-  stam->getEditStation(step,name,id,stations);
 }
 
 void Controller::getStationData(vector<std::string>& data)

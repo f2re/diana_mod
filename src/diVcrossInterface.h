@@ -40,6 +40,10 @@
 #include <string>
 #include <vector>
 
+#include "diField/VcrossData.h"
+
+extern const char LOCATIONS_VCROSS[]; // defined in vcross_v2/VcrossQtManager.cc
+
 class LogFileIO;
 struct LocationData;
 
@@ -59,11 +63,8 @@ Q_SIGNALS: // emitted by vcross
   //! help window
   void requestHelpPage(const std::string& source, const std::string& tag="");
 
-  //! help window
-  void requestLoadCrossectionFiles(const QStringList& filenames);
-
-  //! request starting the edit manager for vertical crossections
-  void requestVcrossEditor(bool on);
+  //! request starting the edit manager for vertical cross sections or time graphs
+  void requestVcrossEditor(bool on, bool tg);
 
   //! changed list of crossections and/or the style
   void crossectionSetChanged(const LocationData& locations);
@@ -118,6 +119,13 @@ public:
   virtual void readLog(const LogFileIO& logfile, const std::string& thisVersion, const std::string& logVersion,
       int displayWidth, int displayHeight) = 0;
 };
+
+struct CrossSection
+{
+  std::string mLabel;
+  vcross::LonLat_v mPoints;
+};
+typedef std::vector<CrossSection> CrossSection_v;
 
 Q_DECLARE_INTERFACE(VcrossInterface, "metno.diana.VcrossInterface/1.0");
 

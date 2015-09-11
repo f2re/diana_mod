@@ -54,7 +54,7 @@ class EditItemManager : public DrawingManager
 
 public:
   enum Action {
-    Cut, Copy, Paste, EditProperties, EditStyle, Undo, Redo, Select,
+    SelectAll, Cut, Copy, Paste, EditProperties, EditStyle, Undo, Redo, Select,
     CreatePolyLine, CreateSymbol, CreateText, CreateComposite
   };
 
@@ -76,14 +76,14 @@ public:
 
   void addItem(DrawingItemBase *, bool = false, bool = false);
   void editItem(DrawingItemBase *item);
-  void removeItem(DrawingItemBase *item);
+  virtual void removeItem(DrawingItemBase *item);
   void updateItem(DrawingItemBase *item, const QVariantMap &props);
 
   virtual QList<DrawingItemBase *> allItems() const;
   QList<DrawingItemBase *> selectedItems() const;
 
   virtual DrawingItemBase *createItem(const QString &type);
-  virtual DrawingItemBase *createItemFromVarMap(const QVariantMap &vmap, QString *error);
+  virtual DrawingItemBase *createItemFromVarMap(const QVariantMap &vmap, QString &error);
   virtual QString loadDrawing(const QString &name, const QString &fileName);
 
   QUndoStack *undoStack();
@@ -102,9 +102,7 @@ public:
                          QList<DrawingItemBase *> addItems);
 
   void enableItemChangeNotification(bool = true);
-  void setItemChangeFilter(const QString &);
   void emitItemChanged() const;
-  void emitLoadFile(const QString &) const;
 
   void setItemsVisibilityForced(bool);
 
@@ -135,7 +133,9 @@ public slots:
   void redo();
   void repaint();
   void reset();
+  void save();
   void selectItem(DrawingItemBase *, bool = false, bool = true);
+  void selectAllItems();
   void setSelectMode();
   void startStopEditing(bool start);
   void undo();
@@ -163,11 +163,8 @@ signals:
   void setWorkAreaCursor(const QCursor &);
   void unsetWorkAreaCursor();
   void editing(bool);
-  void loadFile(const QString &) const;
-
-protected:
-  virtual void addItem_(DrawingItemBase *, bool = true, bool = false);
-  virtual void removeItem_(DrawingItemBase *, bool = true);
+  void reloadRequested();
+  void saveRequested();
 
 private:
   DrawingItemBase *hitItem_; // current hit item
@@ -184,6 +181,7 @@ private:
   QUndoStack undoStack_;
   UndoView *undoView_;
 
+  QAction* selectAllAction_;
   QAction* copyAction_;
   QAction* cutAction_;
   QAction* pasteAction_;
@@ -216,7 +214,6 @@ private:
   void updateTimes();
   void updateActionsAndTimes();
 
-  QString itemChangeFilter_;
   bool itemChangeNotificationEnabled_;
   bool itemsVisibilityForced_;
   bool itemPropsDirectlyEditable_;
@@ -239,6 +236,9 @@ public:
                      QList<DrawingItemBase *> removeItems,
                      QList<DrawingItemBase *> addItems);
   virtual ~ModifyItemsCommand();
+
+  virtual int id() const;
+  virtual bool mergeWith(const QUndoCommand *command);
 
 private:
   QHash<int, QVariantMap> oldItemStates_;

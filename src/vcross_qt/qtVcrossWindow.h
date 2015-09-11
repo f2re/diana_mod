@@ -49,6 +49,7 @@ class Controller;
 struct LocationData;
 class ToggleButton;
 class VcrossAddPlotDialog;
+class VcrossReplaceModelDialog;
 class VcrossStyleDialog;
 class VcrossSetupDialog;
 class Ui_VcrossWindow;
@@ -95,9 +96,8 @@ public:
 Q_SIGNALS: // defined in VcrossInterface
   void VcrossHide();
   void requestHelpPage(const std::string&, const std::string& = ""); // activate help
-  void requestLoadCrossectionFiles(const QStringList& filenames);
   //! called when draw/edit button is toggled
-  void requestVcrossEditor(bool on);
+  void requestVcrossEditor(bool on, bool tg);
   void vcrossHistoryNext();
   void vcrossHistoryPrevious();
 
@@ -115,6 +115,8 @@ private:
 
   void repaintPlotIfNotInGroup();
   void repaintPlot();
+
+  void ensureStyleDialog();
 
 private Q_SLOTS:
   // from layer button bar
@@ -143,6 +145,7 @@ private Q_SLOTS:
   void onAddField();
   void onShowStyleDialog();
   void onRemoveAllFields();
+  void onReplaceModel();
   void leftCrossectionClicked();
   void rightCrossectionClicked();
   void crossectionBoxActivated(int index);
@@ -153,6 +156,7 @@ private Q_SLOTS:
   void printClicked();
   void saveClicked();
   void onShowSetupDialog();
+  void onToggleDrawEdit(bool enableEdit);
   void timeGraphClicked(bool on);
   void quitClicked();
   void helpClicked();
@@ -170,8 +174,15 @@ private:
   vcross::QtManager_p vcrossm;
 
   VcrossAddPlotDialog* vcAddPlotDialog;
+  VcrossReplaceModelDialog* vcReplaceModelDialog;
   VcrossStyleDialog* vcStyleDialog;
   VcrossSetupDialog* vcSetupDialog;
+  // positions of dialogs from the logfile
+  QPoint mPositionAddPlot;
+  QPoint mPositionReplaceModel;
+  QPoint mPositionStyle;
+  QPoint mPositionSetup;
+
   bool dynEditManagerConnected;
 
   // printerdefinitions

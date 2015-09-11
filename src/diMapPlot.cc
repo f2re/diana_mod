@@ -264,7 +264,35 @@ void MapPlot::plot(DiGLPainter* gl, PlotOrder porder)
     haspanned= false;
   }
 
+  if (!mapinfo.name.empty())
+    plotMap(gl,zorder);
+
+  // plot latlon
+  bool plot_lon = mapinfo.lon.ison && mapinfo.lon.zorder == zorder;
+  bool plot_lat = mapinfo.lat.ison && mapinfo.lat.zorder == zorder;
+  if (plot_lon || plot_lat) {
+
+    if (mapinfo.lon.showvalue || mapinfo.lat.showvalue)
+      gl->setFont("BITMAPFONT");
+
+    plotGeoGrid(gl, mapinfo, plot_lon, plot_lat);
+  }
+
+  // plot frame
   bool frameok = getStaticPlot()->getRequestedarea().P().isDefined();
+  if (frameok && mapinfo.frame.ison && mapinfo.frame.zorder==zorder) {
+    //    METLIBS_LOG_DEBUG("Plotting frame for layer:" << zorder);
+    const Rectangle& reqr = getStaticPlot()->getRequestedarea().R();
+    const Colour& c = getStaticPlot()->notBackgroundColour(ffopts.linecolour);
+    gl->setLineStyle(c, ffopts.linewidth, ffopts.linetype);
+    gl->drawRect(reqr);
+  }
+
+  gl->Disable(DiGLPainter::gl_LINE_STIPPLE);
+}
+
+void MapPlot::plotMap(DiGLPainter* gl, int zorder)
+{
 
   bool makenew= false;
   bool makelist= false;
@@ -324,6 +352,7 @@ void MapPlot::plot(DiGLPainter* gl, PlotOrder porder)
 
     const Colour& c = getStaticPlot()->notBackgroundColour(contopts.linecolour);
 
+    //Plot map
     if (mapinfo.type=="normal" || mapinfo.type=="pland") {
       // check contours
       if (mapinfo.contour.ison && mapinfo.contour.zorder==zorder) {
@@ -394,27 +423,6 @@ void MapPlot::plot(DiGLPainter* gl, PlotOrder porder)
       gl->CallList(drawlist[zorder]);
   }
 
-  // check latlon
-  bool plot_lon = mapinfo.lon.ison && mapinfo.lon.zorder == zorder;
-  bool plot_lat = mapinfo.lat.ison && mapinfo.lat.zorder == zorder;
-  if (plot_lon || plot_lat) {
-
-    if (mapinfo.lon.showvalue || mapinfo.lat.showvalue)
-      gl->setFont("BITMAPFONT");
-
-    plotGeoGrid(gl, mapinfo, plot_lon, plot_lat);
-  }
-
-  // plot frame
-  if (frameok && mapinfo.frame.ison && mapinfo.frame.zorder==zorder) {
-    //    METLIBS_LOG_DEBUG("Plotting frame for layer:" << zorder);
-    const Rectangle& reqr = getStaticPlot()->getRequestedarea().R();
-    const Colour& c = getStaticPlot()->notBackgroundColour(ffopts.linecolour);
-    gl->setLineStyle(c, ffopts.linewidth, ffopts.linetype);
-    gl->drawRect(reqr);
-  }
-
-  gl->Disable(DiGLPainter::gl_LINE_STIPPLE);
 }
 
 bool MapPlot::plotMapLand4(DiGLPainter* gl, const std::string& filename, const float xylim[],
@@ -893,11 +901,11 @@ bool MapPlot::plotGeoGrid(DiGLPainter* gl, const MapInfo& mapinfo, bool plot_lon
   diutil::MapValuePosition lat_valuepos = diutil::mapValuePositionFromText(mapinfo.lat.value_pos);
   float lat_fontsize = mapinfo.lat.fontsize;
 
-/*
-  METLIBS_LOG_WARN((lon_values ? "lon_values=ON" : "lon_values=OFF") << " "
+  /*
+  METLIBS_LOG_DEBUG((lon_values ? "lon_values=ON" : "lon_values=OFF") << " "
   << (lat_values ? "lat_values=ON" : "lat_values=OFF") << " lon_valuepos="
   << lon_valuepos << " lat_valuepos=" << lat_valuepos);
-*/
+   */
 
 
   const Projection& p = getStaticPlot()->getMapArea().P();
@@ -1110,7 +1118,6 @@ bool MapPlot::plotGeoGrid(DiGLPainter* gl, const MapInfo& mapinfo, bool plot_lon
   return true;
 }
 
-//area names ftom text file
 bool MapPlot::plotLinesSimpleText(DiGLPainter* gl, const std::string& filename)
 {
   // plot lines from very simple text file,

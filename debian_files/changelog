@@ -1,3 +1,52 @@
+diana (3.39.0~rc3-1) unstable; urgency=low
+
+  * Edit Made a first attempt to do minute-accuracy adjustment of points.
+  * Edit Added tooltips to show the positions of points in polylines as they are placed.
+  * Edit Added a question dialog to ask the user if current editable objects should be discarded.
+  * Edit Added a clear button to remove all editable objects.
+  * vcross: bugfix replace field
+  * FieldManager - if referencetime is not given explicitly, check for new files
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 08 Sep 2015 15:42:45 +0200
+
+diana (3.39.0~rc2-1) unstable; urgency=low
+
+  * Added infrastructure to allow the vcross manager to start time graph symbol placement.
+  * Fields - bugfix FIELD string
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 03 Sep 2015 13:28:13 +0200
+
+diana (3.39.0~rc1-1) unstable; urgency=low
+
+  * fimex - 0.59.1-1
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 01 Sep 2015 09:22:15 +0200
+
+diana (3.39.0~a4-1) unstable; urgency=low
+
+  * Edit - shortcuts, multiple selection, etc
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 27 Aug 2015 11:40:04 +0200
+
+diana (3.39.0~a3-1) unstable; urgency=low
+
+  * vcross - shortcuts
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Fri, 14 Aug 2015 11:57:50 +0200
+
+diana (3.39.0~a2-2) unstable; urgency=low
+
+  * Bugfix vcross styling
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Thu, 13 Aug 2015 13:02:13 +0200
+
+diana (3.39.0~a2-1) unstable; urgency=low
+
+  * diField and miRaster included in the diana code
+  * drawing - save/reload improved
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Wed, 12 Aug 2015 12:34:22 +0200
+
 diana (3.39.0~a1-1) unstable; urgency=low
 
   * reorganization of painting - introduce DiCanvas, DiPainter and DiGLCanvas, DiGLPainter interfaces

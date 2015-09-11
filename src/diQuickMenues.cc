@@ -332,7 +332,7 @@ std::string updateLine(std::string line)
   miutil::replace(line, "(74,533)", "(uk)");
   miutil::replace(line, "(74,604)", "(uk)");
 
-  miutil::replace(line, "font=Arial","font=BITMAPFONT");
+  miutil::replace(line, "font=Helvetica","font=BITMAPFONT");
 
   // these have been added in diana 3.39
   miutil::replace(line, "modell/sat-omr\xE5""de", "model/sat-area");

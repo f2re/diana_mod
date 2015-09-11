@@ -122,10 +122,11 @@ public:
   int nextJoinId(bool = true);
   void separateJoinIds(const QList<DrawingItemBase *> &);
 
+  virtual bool isEmpty() const;
   virtual QList<DrawingItemBase *> allItems() const;
   bool matchesFilter(DrawingItemBase *item) const;
   bool isItemVisible(DrawingItemBase *item) const;
-  void setFilter(const QPair<QStringList, QSet<QString> > &filter);
+  void setFilter(const QHash<QString, QStringList> &filter);
 
   std::vector<PolyLineInfo> loadCoordsFromKML(const std::string &fileName);
   EditItems::ItemGroup *itemGroup(const QString &name);
@@ -133,6 +134,7 @@ public:
 
 public slots:
   std::vector<miutil::miTime> getTimes() const;
+  void setAllItemsVisible(bool enable);
 
 signals:
   void drawingLoaded(const QString &name);
@@ -141,8 +143,6 @@ signals:
   void updated();
 
 protected:
-  virtual void addItem_(DrawingItemBase *, EditItems::ItemGroup *group);
-  virtual void removeItem_(DrawingItemBase *, EditItems::ItemGroup *group);
   void applyPlotOptions(DiGLPainter *gl, const DrawingItemBase *) const;
 
   static Rectangle editRect_;
@@ -152,7 +152,9 @@ protected:
   QMap<QString, QString> loaded_;
 
   QMap<QString, EditItems::ItemGroup *> itemGroups_;
-  QPair<QStringList, QSet<QString> > filter_;
+  QMap<QString, QDateTime> lastUpdated_;
+  QHash<QString, QStringList> filter_;
+  bool allItemsVisible_;
 
 private:
   GridConverter gc_;

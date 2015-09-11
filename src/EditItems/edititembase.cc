@@ -46,7 +46,7 @@ void EditItemBase::init()
 {
   moving_ = false;
   resizing_ = false;
-  pressedCtrlPointIndex_ = -1;
+  pressedCtrlPointIndex_.clear();
   hoverCtrlPointIndex_ = -1;
 }
 
@@ -140,9 +140,11 @@ void EditItemBase::drawControlPoints(DiGLPainter* gl, const QColor &color, const
     if (isJoinedEndPoint(jCount, jId, i, n)) {
       gl->Color4ub(joinColor.red(), joinColor.green(), joinColor.blue(), joinColor.alpha());
       extraPad = 1;
-    } else {
+    } else if (pressedCtrlPointIndex_.contains(i))
+      gl->Color4ub(255, 0, 0, 255);
+    else
       gl->Color4ub(color.red(), color.green(), color.blue(), color.alpha());
-    }
+
     drawRect(gl, controlPoints_.at(i), pad + extraPad);
   }
 
@@ -214,6 +216,25 @@ void EditItemBase::mousePress(QMouseEvent *event, bool &repaintNeeded, bool *mul
 }
 
 /**
+ * Handles a mouse press \a event where the click may intersect with a control point,
+ * updating the set of selected points and updating the \a repaintNeeded flag as
+ * necessary.
+ */
+void EditItemBase::mousePressControlPoints(QMouseEvent *event, bool &repaintNeeded)
+{
+  if (!(event->modifiers() & Qt::ControlModifier)) {
+    pressedCtrlPointIndex_.clear();
+    repaintNeeded = true;
+  }
+
+  int index = hitControlPoint(event->pos());
+  if (index > -1) {
+    pressedCtrlPointIndex_.insert(index);
+    repaintNeeded = true;
+  }
+}
+
+/**
  * Handles a mouse press event for an item in the process of being completed (i.e. during manual
  * placement of a new item).
  *
@@ -262,27 +283,31 @@ void EditItemBase::mouseDoubleClick(QMouseEvent *event, bool &repaintNeeded)
   Q_UNUSED(repaintNeeded)
 }
 
-void EditItemBase::nudge(QKeyEvent *event, bool &repaintNeeded)
-{
-  QPointF pos;
-  const qreal nudgeVal = 1; // nudge item by this much
-  if (event->key() == Qt::Key_Left) pos += QPointF(-nudgeVal, 0);
-  else if (event->key() == Qt::Key_Right) pos += QPointF(nudgeVal, 0);
-  else if (event->key() == Qt::Key_Down) pos += QPointF(0, -nudgeVal);
-  else pos += QPointF(0, nudgeVal); // Key_Up
-  moveBy(pos);
-  repaintNeeded = true;
-  event->accept();
-}
-
 void EditItemBase::keyPress(QKeyEvent *event, bool &repaintNeeded)
 {
-  if ((event->modifiers() & Qt::GroupSwitchModifier) && // "Alt Gr" modifier key
-      ((event->key() == Qt::Key_Left)
-    || (event->key() == Qt::Key_Right)
-    || (event->key() == Qt::Key_Down)
-    || (event->key() == Qt::Key_Up))) {
-    nudge(event, repaintNeeded);
+  if (event->modifiers() & Qt::ShiftModifier) {
+    QPointF pos;
+    const qreal nudgeVal = 1; // nudge item by this much
+    switch (event->key()) {
+    case Qt::Key_Left:
+      pos += QPointF(-nudgeVal, 0);
+      break;
+    case Qt::Key_Right:
+      pos += QPointF(nudgeVal, 0);
+      break;
+    case Qt::Key_Down:
+      pos += QPointF(0, -nudgeVal);
+      break;
+    case Qt::Key_Up:
+      pos += QPointF(0, nudgeVal);
+      break;
+    default:
+      return;
+    }
+
+    moveBy(pos);
+    repaintNeeded = true;
+    event->accept();
   }
 }
 

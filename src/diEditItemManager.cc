@@ -97,6 +97,7 @@ EditItemManager::EditItemManager()
   connect(&undoStack_, SIGNAL(canRedoChanged(bool)), this, SIGNAL(canRedoChanged(bool)));
   connect(&undoStack_, SIGNAL(indexChanged(int)), this, SLOT(repaint()));
 
+  selectAllAction_ = new QAction(tr("Select All"), this);
   copyAction_ = new QAction(tr("Copy"), this);
   copyAction_->setShortcut(QKeySequence::Copy);
   cutAction_ = new QAction(tr("Cut"), this);
@@ -107,7 +108,7 @@ EditItemManager::EditItemManager()
   joinAction_->setShortcut(QString("J"));
   unjoinAction_ = new QAction(tr("Unjoin"), this);
   unjoinAction_->setShortcut(tr("Ctrl+J"));
-  toggleReversedAction_ = new QAction(tr("Toggle reversed"), this);
+  toggleReversedAction_ = new QAction(tr("Toggle Reversed"), this);
   toggleReversedAction_->setShortcut(QString("R"));
   editPropertiesAction_ = new QAction(tr("Edit P&roperties..."), this);
   editPropertiesAction_->setShortcut(tr("Ctrl+R"));
@@ -136,6 +137,7 @@ EditItemManager::EditItemManager()
   createCompositeAction_ = new QAction(tr("Composite"), this);
   createCompositeAction_->setCheckable(true);
 
+  connect(selectAllAction_, SIGNAL(triggered()), SLOT(selectAllItems()));
   connect(copyAction_, SIGNAL(triggered()), SLOT(copySelectedItems()));
   connect(cutAction_, SIGNAL(triggered()), SLOT(cutSelectedItems()));
   connect(pasteAction_, SIGNAL(triggered()), SLOT(pasteItems()));
@@ -187,13 +189,21 @@ bool EditItemManager::parseSetup()
     }
 
     // Check for different types of definition.
-    if (items.contains("hide-property-sections")) {
-      QStringList values = items.value("hide-property-sections").split(",");
-      Properties::PropertiesEditor::instance()->setPropertyRules("hide", values);
+    if (items.contains("hide-property-sections-drawing")) {
+      QStringList values = items.value("hide-property-sections-drawing").split(",");
+      Properties::PropertiesEditor::instance()->setPropertyRules("hide-drawing", values);
     }
-    if (items.contains("show-property-sections")) {
-      QStringList values = items.value("show-property-sections").split(",");
-      Properties::PropertiesEditor::instance()->setPropertyRules("show", values);
+    if (items.contains("hide-property-sections-editing")) {
+      QStringList values = items.value("hide-property-sections-editing").split(",");
+      Properties::PropertiesEditor::instance()->setPropertyRules("hide-editing", values);
+    }
+    if (items.contains("show-property-sections-drawing")) {
+      QStringList values = items.value("show-property-sections-drawing").split(",");
+      Properties::PropertiesEditor::instance()->setPropertyRules("show-drawing", values);
+    }
+    if (items.contains("show-property-sections-editing")) {
+      QStringList values = items.value("show-property-sections-editing").split(",");
+      Properties::PropertiesEditor::instance()->setPropertyRules("show-editing", values);
     }
   }
 
@@ -268,7 +278,9 @@ void EditItemManager::addItem(DrawingItemBase *item, bool incomplete, bool skipR
   } else {
     if (!item->getLatLonPoints().isEmpty())
       setFromLatLonPoints(item, item->getLatLonPoints()); // obtain screen coords from geo coords
-    addItem_(item, false, true);
+
+    itemGroups_.value("scratch")->addItem(item);
+    emit itemAdded(item);
   }
 
   if (!skipRepaint)
@@ -290,7 +302,7 @@ DrawingItemBase *EditItemManager::createItem(const QString &type)
   return Drawing(item);
 }
 
-DrawingItemBase *EditItemManager::createItemFromVarMap(const QVariantMap &vmap, QString *error)
+DrawingItemBase *EditItemManager::createItemFromVarMap(const QVariantMap &vmap, QString &error)
 {
   Q_ASSERT(!vmap.empty());
   Q_ASSERT(vmap.contains("type"));
@@ -311,16 +323,6 @@ DrawingItemBase *EditItemManager::createItemFromVarMap(const QVariantMap &vmap, 
   return Drawing(item);
 }
 
-void EditItemManager::addItem_(DrawingItemBase *item, bool updateNeeded, bool ignoreSelection)
-{
-  DrawingManager::addItem_(item, itemGroups_.value("scratch"));
-  if (!ignoreSelection)
-    selectItem(item, !QApplication::keyboardModifiers().testFlag(Qt::ControlModifier));
-  emit itemAdded(item);
-  if (updateNeeded)
-    update();
-}
-
 void EditItemManager::editItem(DrawingItemBase *item)
 {
   incompleteItem_ = item;
@@ -332,13 +334,8 @@ void EditItemManager::removeItem(DrawingItemBase *item)
   // Convert screen coords to geo coords in preparation for being stored in
   // an undo command.
   item->setLatLonPoints(getLatLonPoints(item));
-  removeItem_(item);
-}
 
-void EditItemManager::removeItem_(DrawingItemBase *item, bool updateNeeded)
-{
-  EditItems::ItemGroup *group = itemGroups_.value("scratch");
-  DrawingManager::removeItem_(item, group);
+  itemGroups_.value("scratch")->removeItem(item);
   hitItems_.removeOne(item);
   deselectItem(item);
 
@@ -346,8 +343,7 @@ void EditItemManager::removeItem_(DrawingItemBase *item, bool updateNeeded)
 
   updateJoins();
   emit itemRemoved(item->id());
-  if (updateNeeded)
-    update();
+  update();
 }
 
 void EditItemManager::updateItem(DrawingItemBase *item, const QVariantMap &props)
@@ -521,6 +517,9 @@ void EditItemManager::mouseMove(QMouseEvent *event)
     foreach (DrawingItemBase *item, selectedItems()) {
       Editing(item)->mouseMove(event, rpn);
       item->setLatLonPoints(getLatLonPoints(item));
+      // Call the item's method to process the event as a hover event in
+      // order to allow polyline items to show coordinate tooltips.
+      Editing(item)->mouseHover(event, rpn);
       if (rpn) repaintNeeded_ = true;
     }
 
@@ -605,8 +604,13 @@ void EditItemManager::keyPress(QKeyEvent *event)
     return;
   }
 
-  if (event->key() == Qt::Key_Escape)
+  if (event->key() == Qt::Key_Escape) {
     return;
+  } else if ((event->key() == Qt::Key_R) && (event->modifiers() == Qt::ControlModifier)) {
+    emit reloadRequested();
+    event->accept();
+    return;
+  }
 
   const QSet<DrawingItemBase *> origSelItems = selectedItems().toSet();
   QSet<int> origSelIds;
@@ -616,14 +620,18 @@ void EditItemManager::keyPress(QKeyEvent *event)
   // process each of the originally selected items
   foreach (int origSelId, origSelIds) {
 
-    // at this point, the item may or may not exist (it may have been removed in an earlier iteration)
-
+    // At this point, the item may or may not exist (it may have been removed
+    // in an earlier iteration). If it still exists, pass the event to it.
     DrawingItemBase *origSelItem = idToItem(origSelItems, origSelId);
+
     if (origSelItem) {
-      // it still exists, so pass the event
       bool rpn = false;
       Editing(origSelItem)->keyPress(event, rpn);
-      Q_UNUSED(rpn); // ### for now
+
+      // If the item needs to be repainted, take that as a hint for us to
+      // update its geographic coordinates.
+      if (rpn)
+        origSelItem->setLatLonPoints(getLatLonPoints(origSelItem));
 
       adjustSelectedJoinPoints();
     }
@@ -817,6 +825,20 @@ void EditItemManager::selectItem(DrawingItemBase *item, bool exclusive, bool not
     emit selectionChanged();
 }
 
+void EditItemManager::selectAllItems()
+{
+  bool selected = false;
+
+  foreach (DrawingItemBase *item, allItems()) {
+    if (!item->selected()) {
+      item->setSelected(true);
+      selected = true;
+    }
+  }
+  if (selected)
+    emit selectionChanged();
+}
+
 void EditItemManager::deselectItem(DrawingItemBase *item, bool notify)
 {
   item->setSelected(false);
@@ -843,6 +865,7 @@ void EditItemManager::deselectAllItems(bool notify)
 QHash<EditItemManager::Action, QAction*> EditItemManager::actions()
 {
   QHash<Action, QAction*> a;
+  a[SelectAll] = selectAllAction_;
   a[Cut] = cutAction_;
   a[Copy] = copyAction_;
   a[Paste] = pasteAction_;
@@ -891,6 +914,7 @@ void EditItemManager::setStyleType()
 void EditItemManager::updateActions()
 {
   const QSet<DrawingItemBase *> selItems = selectedItems().toSet();
+  selectAllAction_->setEnabled(allItems().size() > 0);
   cutAction_->setEnabled(selItems.size() > 0);
   copyAction_->setEnabled(selItems.size() > 0);
   pasteAction_->setEnabled(QApplication::clipboard()->mimeData()->hasFormat("application/x-diana-object"));
@@ -926,11 +950,6 @@ void EditItemManager::enableItemChangeNotification(bool enabled)
   itemChangeNotificationEnabled_ = enabled;
 }
 
-void EditItemManager::setItemChangeFilter(const QString &itemType)
-{
-  itemChangeFilter_ = itemType;
-}
-
 // Emits the itemChanged() signal to notify about a _potential_ change to a single-selected
 // item filtered according to setItemChangeFilter().
 // The signal is also emitted whenever the above condition goes from true to false.
@@ -942,10 +961,8 @@ void EditItemManager::emitItemChanged() const
   QList<QVariantMap> itemProps;
 
   foreach (DrawingItemBase *item, selectedItems()) {
-    const QString type(item->properties().value("style:type").toString());
-    if (itemChangeFilter_ != type)
-      continue;
 
+    const QString type(item->properties().value("style:type").toString());
     QVariantMap props;
     props.insert("type", type);
     props.insert("id", item->id());
@@ -978,11 +995,6 @@ void EditItemManager::emitItemChanged() const
     }
     lastCallMatched = false;
   }
-}
-
-void EditItemManager::emitLoadFile(const QString &fileName) const
-{
-  emit loadFile(fileName);
 }
 
 void EditItemManager::setItemsVisibilityForced(bool forced)
@@ -1154,7 +1166,7 @@ void EditItemManager::pasteItems()
 
     foreach (QVariant cbItem, cbItems) {
       QString error;
-      DrawingItemBase *item = createItemFromVarMap(cbItem.toMap(), &error);
+      DrawingItemBase *item = createItemFromVarMap(cbItem.toMap(), error);
       if (item) {
         item->setSelected();
         item->propertiesRef().insert("joinId", 0);
@@ -1405,6 +1417,8 @@ void EditItemManager::sendMouseEvent(QMouseEvent *event, EventResult &res)
         selectedCategories.insert(item->category());
 
       QMenu contextMenu;
+      contextMenu.addAction(selectAllAction_);
+      contextMenu.addSeparator();
       contextMenu.addAction(copyAction_);
       contextMenu.addAction(cutAction_);
       contextMenu.addAction(pasteAction_);
@@ -1561,10 +1575,12 @@ void EditItemManager::sendMouseEvent(QMouseEvent *event, EventResult &res)
   }
 
   res.repaint = needsRepaint();
-  res.action = canUndo() ? objects_changed : no_action;
 
-  if (event->type() != QEvent::MouseMove)
+  if (event->type() != QEvent::MouseMove) {
     updateActionsAndTimes();
+    res.action = canUndo() ? objects_changed : no_action;
+  } else
+    res.action = browsing; // allow the main window to update the coordinates label
 }
 
 void EditItemManager::getViewportDisplacement(int &w, int &h, float &dx, float &dy)
@@ -1641,11 +1657,15 @@ void EditItemManager::sendKeyboardEvent(QKeyEvent *event, EventResult &res)
     return;
   }
 
-  if (event->type() == QEvent::KeyPress) {
+  // First, pass key presses to the items themselves.
 
-    if ((event->key() == Qt::Key_Backspace) || (event->key() == Qt::Key_Delete)) {
-      deleteSelectedItems();
-    } else if (cutAction_->shortcut().matches(event->key() | event->modifiers()) == QKeySequence::ExactMatch) {
+  if (event->type() == QEvent::KeyPress)
+    keyPress(event);
+
+  // Process unhandled key presses to perform high level operations.
+
+  if (!event->isAccepted() && event->type() == QEvent::KeyPress) {
+    if (cutAction_->shortcut().matches(event->key() | event->modifiers()) == QKeySequence::ExactMatch) {
       cutSelectedItems();
     } else if (copyAction_->shortcut().matches(event->key() | event->modifiers()) == QKeySequence::ExactMatch) {
       copySelectedItems();
@@ -1665,13 +1685,9 @@ void EditItemManager::sendKeyboardEvent(QKeyEvent *event, EventResult &res)
     } else if (event->modifiers().testFlag(Qt::NoModifier) && (event->key() == Qt::Key_Escape)) {
       setSelectMode();
       return;
-    }
-  } else {
-    return;
+    } else if ((event->key() == Qt::Key_Backspace) || (event->key() == Qt::Key_Delete))
+      deleteSelectedItems();
   }
-
-  if (!event->isAccepted())
-    keyPress(event);
 
   repaintNeeded_ = true; // ### for now
 
@@ -1773,6 +1789,10 @@ QString EditItemManager::loadDrawing(const QString &name, const QString &fileNam
   return error;
 }
 
+void EditItemManager::save()
+{
+  emit saveRequested();
+}
 
 // Command classes
 
@@ -1825,4 +1845,63 @@ void ModifyItemsCommand::undo()
 void ModifyItemsCommand::redo()
 {
   EditItemManager::instance()->replaceItemStates(newItemStates_, removeItems_, addItems_);
+}
+
+int ModifyItemsCommand::id() const
+{
+  return 0x4d6f6469; // "Modi"
+}
+
+bool ModifyItemsCommand::mergeWith(const QUndoCommand *command)
+{
+  if (command->id() != id())
+    return false;
+
+  // Don't merge commands that add or remove items.
+  if (!addItems_.isEmpty() || !removeItems_.isEmpty())
+    return false;
+
+  const ModifyItemsCommand *cmd = static_cast<const ModifyItemsCommand *>(command);
+
+  // Don't merge commands that add or remove items.
+  if (!cmd->addItems_.isEmpty() || !cmd->removeItems_.isEmpty())
+    return false;
+
+  // Only merge commands that operate on the same items.
+  if (newItemStates_.keys() != cmd->newItemStates_.keys())
+    return false;
+
+  // Only merge commands that involve only geometry changes.
+  QHash<int, QVariantMap> changes;
+  foreach (int id, newItemStates_.keys()) {
+
+    QVariantMap oldProps = cmd->oldItemStates_.value(id);
+    QVariantMap newProps = cmd->newItemStates_.value(id);
+
+    QList<QVariant> oldPoints = oldProps.value("latLonPoints").toList();
+    QList<QVariant> newPoints = newProps.value("latLonPoints").toList();
+
+    if (oldPoints == newPoints)
+      return false;
+
+    for (int i = 0; i < oldPoints.size(); ++i) {
+      if ((newPoints.at(i).toPointF() - oldPoints.at(i).toPointF()).manhattanLength() > 4)
+        return false;
+    }
+
+    // Discard the geometry properties and compare the others. Exit if the
+    // others are not identical.
+    oldProps.remove("latLonPoints");
+    newProps.remove("latLonPoints");
+    foreach (const QString &key, oldProps.keys()) {
+      if (oldProps.value(key) != newProps.value(key))
+        return false;
+    }
+  }
+
+  // Add the new geometries to the existing states.
+  foreach (int id, newItemStates_.keys())
+    newItemStates_[id]["latLonPoints"] = cmd->newItemStates_.value(id).value("latLonPoints");
+
+  return true;
 }

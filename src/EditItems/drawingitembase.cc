@@ -33,10 +33,10 @@
 #include <EditItems/kml.h>
 
 DrawingItemBase::DrawingItemBase(int id__)
-    : id_((id__ >= 0) ? id__ : nextId())
+    : visible_(false)
+    , id_((id__ >= 0) ? id__ : nextId())
     , selected_(false)
     , joinCount_(0)
-    , visible_(false)
 {
 }
 
@@ -199,12 +199,22 @@ qreal DrawingItemBase::sqr(qreal x) { return x * x; }
 
 QList<QPointF> DrawingItemBase::getLatLonPoints() const
 {
-    return latLonPoints_;
+  return latLonPoints_;
+}
+
+QList<QPointF> DrawingItemBase::exportLatLonPoints() const
+{
+  return latLonPoints_;
 }
 
 void DrawingItemBase::setLatLonPoints(const QList<QPointF> &points)
 {
-    latLonPoints_ = points;
+  latLonPoints_ = points;
+}
+
+void DrawingItemBase::importLatLonPoints(const QList<QPointF> &points)
+{
+  latLonPoints_ = points;
 }
 
 // Returns a new <ExtendedData> element.
@@ -231,13 +241,25 @@ QDomElement DrawingItemBase::createExtDataElement(QDomDocument &doc, const QHash
     objectType = "Undefined";
     break;
   }
-  extDataElem.appendChild(KML::createExtDataDataElement(doc, "met:objectType", objectType));
+
+  if (!properties_.contains("met:objectType"))
+    extDataElem.appendChild(KML::createExtDataDataElement(doc, "met:objectType", objectType));
+
+  QString styleType = properties_.value("style:type").toString();
+  if (!properties_.contains("met:style:type"))
+    extDataElem.appendChild(KML::createExtDataDataElement(doc, "met:style:type", styleType));
 
   // style and met properties
+  QVariantMap defaultStyleProperties = DrawingStyleManager::instance()->getStyle(category(), styleType);
+  QVariantMap allStyleProperties = DrawingStyleManager::instance()->getStyle(this);
+
+  foreach (const QString key, allStyleProperties.keys()) {
+    if (!defaultStyleProperties.contains(key) || allStyleProperties.value(key).toString() != defaultStyleProperties.value(key).toString())
+      extDataElem.appendChild(KML::createExtDataDataElement(doc, QString("met:style:%1").arg(key), allStyleProperties.value(key).toString()));
+  }
+
   foreach (const QString key, properties_.keys()) {
-    if (key.startsWith("style:"))
-      extDataElem.appendChild(KML::createExtDataDataElement(doc, QString("met:%1").arg(key), properties_.value(key).toString()));
-    else if (key.startsWith("met:"))
+    if (key.startsWith("met:"))
       extDataElem.appendChild(KML::createExtDataDataElement(doc, QString("%1").arg(key), properties_.value(key).toString()));
   }
 
@@ -261,8 +283,10 @@ QDomElement DrawingItemBase::createPointOrPolygonElement(QDomDocument &doc) cons
 
   // create the <coordinates> element
   QString coords;
-  foreach (QPointF point, getLatLonPoints())
+  QList<QPointF> points = exportLatLonPoints();
+  foreach (const QPointF &point, points)
     coords.append(QString("%1,%2,0\n").arg(point.y()).arg(point.x())); // note lon,lat order
+
   QDomElement coordsElem = doc.createElement("coordinates");
   coordsElem.appendChild(doc.createTextNode(coords));
 

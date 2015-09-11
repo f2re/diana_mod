@@ -65,6 +65,7 @@
 #include "qtTextView.h"
 #include "qtMailDialog.h"
 
+#include "diBuild.h"
 #include "diController.h"
 #include "diEditItemManager.h"
 #include "diPaintGLPainter.h"
@@ -166,6 +167,7 @@
 #include <diField/diFieldManager.h>
 
 #include "EditItems/drawingdialog.h"
+#include "EditItems/kml.h"
 #include "EditItems/toolbar.h"
 
 #define MILOGGER_CATEGORY "diana.MainWindow"
@@ -212,14 +214,9 @@
 
 using namespace std;
 
-static const char LOCATIONS_VCROSS[] = "vcross";
-
 DianaMainWindow *DianaMainWindow::self = 0;
 
-DianaMainWindow::DianaMainWindow(Controller *co,
-    const std::string& ver_str,
-    const std::string& build_str,
-    const std::string& dianaTitle)
+DianaMainWindow::DianaMainWindow(Controller *co, const std::string& dianaTitle)
   : QMainWindow(),
     push_command(true),browsing(false),
     markTrajPos(false), markMeasurementsPos(false), vpWindow(0)
@@ -229,9 +226,6 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   , timeron(0),timeout_ms(100),timeloop(false),showelem(true), autoselect(false)
 {
   METLIBS_LOG_SCOPE();
-
-  version_string = ver_str;
-  build_string = build_str;
 
   setWindowIcon(QIcon(QPixmap(diana_icon_xpm)));
   setWindowTitle(tr(dianaTitle.c_str()));
@@ -788,24 +782,6 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   //  addToolBar(Qt::RightToolBarArea,mainToolbar);
 
   mainToolbar->addAction( showResetAreaAction         );
-  mainToolbar->addAction( showQuickmenuAction         );
-  mainToolbar->addAction( showMapDialogAction         );
-  mainToolbar->addAction( showFieldDialogAction       );
-  mainToolbar->addAction( showObsDialogAction         );
-  mainToolbar->addAction( showSatDialogAction         );
-  mainToolbar->addAction( showStationDialogAction     );
-  mainToolbar->addAction( showObjectDialogAction      );
-  mainToolbar->addAction( showTrajecDialogAction      );
-  mainToolbar->addAction( showMeasurementsDialogAction   );
-  mainToolbar->addAction( showProfilesDialogAction    );
-  mainToolbar->addAction( showCrossSectionDialogAction);
-  mainToolbar->addAction( showWaveSpectrumDialogAction);
-
-  mainToolbar->addSeparator();
-  mainToolbar->addAction( showEditDialogAction );
-  mainToolbar->addSeparator();
-  mainToolbar->addSeparator();
-  mainToolbar->addAction( showResetAllAction );
 
 
   /****************** Status bar *****************************/
@@ -904,31 +880,36 @@ DianaMainWindow::DianaMainWindow(Controller *co,
 
   qm= new QuickMenu(this, contr);
   qm->hide();
-
-  fm= new FieldDialog(this, contr);
-  fm->hide();
-
-  om= new ObsDialog(this, contr);
-  om->hide();
-
-  sm= new SatDialog(this, contr);
-  sm->hide();
-
-  stm= new StationDialog(this, contr);
-  stm->hide();
+  mainToolbar->addAction( showQuickmenuAction         );
 
   mm= new MapDialog(this, contr);
   mm->hide();
+  mainToolbar->addAction( showMapDialogAction         );
 
-  em= new EditDialog( this, contr );
-  em->hide();
+  fm= new FieldDialog(this, contr);
+  fm->hide();
+  mainToolbar->addAction( showFieldDialogAction       );
+
+  om= new ObsDialog(this, contr);
+  om->hide();
+  mainToolbar->addAction( showObsDialogAction         );
+
+  sm= new SatDialog(this, contr);
+  sm->hide();
+  mainToolbar->addAction( showSatDialogAction         );
+
+  stm= new StationDialog(this, contr);
+  stm->hide();
+  mainToolbar->addAction( showStationDialogAction     );
 
   objm = new ObjectDialog(this,contr);
   objm->hide();
+  mainToolbar->addAction( showObjectDialogAction      );
 
   trajm = new TrajectoryDialog(this,contr);
   trajm->setFocusPolicy(Qt::StrongFocus);
   trajm->hide();
+  mainToolbar->addAction( showTrajecDialogAction      );
 
   annom = new AnnotationDialog(this,contr);
   annom->setFocusPolicy(Qt::StrongFocus);
@@ -937,6 +918,7 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   measurementsm = new MeasurementsDialog(this,contr);
   measurementsm->setFocusPolicy(Qt::StrongFocus);
   measurementsm->hide();
+  mainToolbar->addAction( showMeasurementsDialogAction   );
 
   uffm = new UffdaDialog(this,contr);
   uffm->hide();
@@ -960,9 +942,10 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   addToolBar(Qt::BottomToolBarArea, editDrawingToolBar);
   editDrawingToolBar->hide();
   connect(editDrawingToolBar, SIGNAL(visible(bool)), SLOT(editDrawingToolBarVisible(bool)));
-  connect(EditItemManager::instance(), SIGNAL(setWorkAreaCursor(const QCursor &)), SLOT(setWorkAreaCursor(const QCursor &)));
-  connect(EditItemManager::instance(), SIGNAL(unsetWorkAreaCursor()), SLOT(unsetWorkAreaCursor()));
-  connect(EditItemManager::instance(), SIGNAL(itemStatesReplaced()), SLOT(updatePlotElements()));
+  EditItemManager *editm = EditItemManager::instance();
+  connect(editm, SIGNAL(setWorkAreaCursor(const QCursor &)), SLOT(setWorkAreaCursor(const QCursor &)));
+  connect(editm, SIGNAL(unsetWorkAreaCursor()), SLOT(unsetWorkAreaCursor()));
+  connect(editm, SIGNAL(itemStatesReplaced()), SLOT(updatePlotElements()));
   connect(drawingDialog, SIGNAL(editingMode(bool)), editDrawingToolBar, SLOT(setVisible(bool)));
 
   textview = new TextView(this);
@@ -970,6 +953,9 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   connect(textview,SIGNAL(printClicked(int)),SLOT(sendPrintClicked(int)));
   textview->hide();
 
+  em= new EditDialog( this, contr );
+  em->hide();
+  mainToolbar->addAction( showEditDialogAction );
 
   //used for testing qickMenus without dialogs
   //connect(qm, SIGNAL(Apply(const vector<std::string>&,bool)),
@@ -1075,6 +1061,8 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   connect(w->Glw(),SIGNAL(objectsChanged()),em, SLOT(undoFrontsEnable()));
   connect(w->Glw(),SIGNAL(fieldsChanged()), em, SLOT(undoFieldsEnable()));
 
+  mainToolbar->addSeparator();
+
   // vertical profiles
   // create a new main window
 #ifndef DISABLE_VPROF
@@ -1085,6 +1073,7 @@ DianaMainWindow::DianaMainWindow(Controller *co,
   connect(vpWindow,SIGNAL(stationChanged(const std::vector<std::string> &)),
       SLOT(stationChangedSlot(const std::vector<std::string> &)));
   connect(vpWindow,SIGNAL(modelChanged()),SLOT(modelChangedSlot()));
+  mainToolbar->addAction( showProfilesDialogAction    );
 #endif
 
   // vertical crossections
@@ -1096,10 +1085,8 @@ DianaMainWindow::DianaMainWindow(Controller *co,
         SLOT(hideVcrossWindow()));
     connect(vcInterface.get(), SIGNAL(requestHelpPage(const std::string&, const std::string&)),
         help, SLOT(showsource(const std::string&, const std::string&)));
-    connect(vcInterface.get(), SIGNAL(requestLoadCrossectionFiles(const QStringList&)),
-        SLOT(onVcrossRequestLoadCrossectionsFile(const QStringList&)));
-    connect(vcInterface.get(), SIGNAL(requestVcrossEditor(bool)),
-        SLOT(onVcrossRequestEditManager(bool)));
+    connect(vcInterface.get(), SIGNAL(requestVcrossEditor(bool, bool)),
+        SLOT(onVcrossRequestEditManager(bool, bool)));
     connect(vcInterface.get(), SIGNAL(crossectionChanged(const QString &)),
         SLOT(crossectionChangedSlot(const QString &)));
     connect(vcInterface.get(), SIGNAL(crossectionSetChanged(const LocationData&)),
@@ -1111,6 +1098,7 @@ DianaMainWindow::DianaMainWindow(Controller *co,
     connect (vcInterface.get(), SIGNAL(vcrossHistoryNext()),
         SLOT(nextHVcrossPlot()));
   }
+  mainToolbar->addAction( showCrossSectionDialogAction);
 #endif
 
   // Wave spectrum
@@ -1124,6 +1112,7 @@ DianaMainWindow::DianaMainWindow(Controller *co,
       SLOT(spectrumChangedSlot(const QString &)));
   connect(spWindow,SIGNAL(spectrumSetChanged()),
       SLOT(spectrumSetChangedSlot()));
+  mainToolbar->addAction( showWaveSpectrumDialogAction);
 #endif
 
   // browse plots
@@ -1172,6 +1161,9 @@ DianaMainWindow::DianaMainWindow(Controller *co,
     connect( spWindow ,SIGNAL(setTime(const std::string&, const miutil::miTime&)),
         tslider,SLOT(setTime(const std::string&, const miutil::miTime&)));
   }
+
+  mainToolbar->addSeparator();
+  mainToolbar->addAction( showResetAllAction );
 
   setAcceptDrops(true);
 
@@ -1346,7 +1338,7 @@ void DianaMainWindow::setEditDrawingMode(bool enabled)
 
 void DianaMainWindow::editDrawingToolBarVisible(bool visible)
 {
-  // Inform both the editing and drawing managers that editing is in progress.
+  // Inform the editing manager that editing is in progress.
   EditItemManager::instance()->setEditing(visible);
 }
 
@@ -1883,12 +1875,9 @@ void DianaMainWindow::modelChangedSlot()
   updateGLSlot();
 }
 
-
 void DianaMainWindow::onVcrossRequestLoadCrossectionsFile(const QStringList& filenames)
 {
   vcrossEditManagerEnableSignals();
-  for (int i=0; i<filenames.size(); ++i)
-    EditItemManager::instance()->emitLoadFile(filenames.at(i));
 }
 
 
@@ -1898,7 +1887,6 @@ void DianaMainWindow::vcrossEditManagerEnableSignals()
     vcrossEditManagerConnected = true;
 
     EditItemManager::instance()->enableItemChangeNotification();
-    EditItemManager::instance()->setItemChangeFilter("Cross section");
     connect(EditItemManager::instance(), SIGNAL(itemChanged(const QVariantMap &)),
         vcInterface.get(), SLOT(editManagerChanged(const QVariantMap &)), Qt::UniqueConnection);
     connect(EditItemManager::instance(), SIGNAL(itemRemoved(int)),
@@ -1909,10 +1897,14 @@ void DianaMainWindow::vcrossEditManagerEnableSignals()
 }
 
 
-void DianaMainWindow::onVcrossRequestEditManager(bool on)
+void DianaMainWindow::onVcrossRequestEditManager(bool on, bool timeGraph)
 {
   if (on) {
-    EditItems::ToolBar::instance()->setCreatePolyLineAction("Cross section");
+    if (timeGraph)
+      EditItems::ToolBar::instance()->setCreateSymbolAction(TIME_GRAPH_TYPE);
+    else
+      EditItems::ToolBar::instance()->setCreatePolyLineAction(CROSS_SECTION_TYPE);
+
     EditItems::ToolBar::instance()->show();
     vcrossEditManagerEnableSignals();
   } else {
@@ -1924,7 +1916,6 @@ void DianaMainWindow::onVcrossRequestEditManager(bool on)
 void DianaMainWindow::crossectionChangedSlot(const QString& name)
 {
   METLIBS_LOG_DEBUG("DianaMainWindow::crossectionChangedSlot to " << name.toStdString());
-  //METLIBS_LOG_DEBUG("DianaMainWindow::crossectionChangedSlot ");
   std::string s= name.toStdString();
   contr->setSelectedLocation(LOCATIONS_VCROSS, s);
   w->updateGL();
@@ -1934,12 +1925,13 @@ void DianaMainWindow::crossectionChangedSlot(const QString& name)
 void DianaMainWindow::crossectionSetChangedSlot(const LocationData& locations)
 {
   METLIBS_LOG_SCOPE();
-  if (locations.elements.empty()) {
+  if (locations.elements.empty())
     contr->deleteLocation(LOCATIONS_VCROSS);
-  } else {
-    LocationData ed = locations;
-    ed.name = LOCATIONS_VCROSS;
-    contr->putLocation(ed);
+  else if (locations.name == LOCATIONS_VCROSS)
+    contr->putLocation(locations);
+  else {
+    METLIBS_LOG_ERROR("bad name '" << locations.name << "' for vcross location data");
+    return;
   }
   updateGLSlot();
 }
@@ -2133,14 +2125,6 @@ void DianaMainWindow::processLetter(const miMessage &letter)
     return;
   }
 
-  else if (letter.command == qmstrings::seteditpositions ){
-    //     commondesc = dataset;
-    //     description = name;
-    contr->stationCommand("setEditStations",
-        letter.data,letter.common,letter.from);
-    //    sendSelectedStations(qmstrings::selectposition);
-  }
-
   else if (letter.command == qmstrings::annotation ){
     //     commondesc = dataset;
     //     description = annotation;
@@ -2162,15 +2146,6 @@ void DianaMainWindow::processLetter(const miMessage &letter)
 
   }
 
-  //   else if (letter.command == qmstrings::changeimage ){ //Obsolete
-  //     //description: dataset;stationname:image
-  //     //find name of data set from description
-  //     vector<std::string> desc = miutil::split(letter.description, ";");
-  //     if( desc.size() < 2 ) return;
-  //       contr->stationCommand("changeImageandText",
-  // 			    letter.data,desc[0],letter.from,desc[1]);
-  //   }
-
   else if (letter.command == qmstrings::changeimageandtext ){
     //METLIBS_LOG_DEBUG("Change text and image\n");
     //description: dataSet;stationname:image:text:alignment
@@ -2190,16 +2165,6 @@ void DianaMainWindow::processLetter(const miMessage &letter)
           letter.description);
     }
   }
-
-  //   else if (letter.command == qmstrings::changeimageandimage ){ //Obsolete
-  //     //METLIBS_LOG_DEBUG("Change image and image\n");
-  //     //description: dataset;stationname:image:image2
-  //     //find name of data set from description
-  //     vector<std::string> desc = miutil::split(letter.description, ";");
-  //     if( desc.size() < 2 ) return;
-  //       contr->stationCommand("changeImageandText",
-  // 			    letter.data,desc[0],letter.from,desc[1]);
-  //   }
 
   else if (letter.command == qmstrings::selectposition ){
     //commondesc: dataset
@@ -2533,7 +2498,13 @@ void DianaMainWindow::showUrl()
 void DianaMainWindow::about()
 {
   QString str =
-      tr("Diana - a 2D presentation system for meteorological data, including fields, observations,\nsatellite- and radarimages, vertical profiles and cross sections.\nDiana has tools for on-screen fieldediting and drawing of objects (fronts, areas, symbols etc.\n")+"\n" + tr("To report a bug or enter an enhancement request, please use the bug tracking tool at http://diana.bugs.met.no (met.no users only). \n") +"\n\n"+ tr("version:") + " " + version_string.c_str()+"\n"+ tr("build:") + " " + build_string.c_str();
+      tr("Diana - a 2D presentation system for meteorological data, including fields, observations,\nsatellite- and radarimages, vertical profiles and cross sections.\nDiana has tools for on-screen fieldediting and drawing of objects (fronts, areas, symbols etc.\n")
+      +"\n"
+      + tr("To report a bug or enter an enhancement request, please use the bug tracking tool at http://diana.bugs.met.no (met.no users only). \n")
+      +"\n\n"
+      + tr("version:") + " " + VERSION + "\n"
+      + tr("build: ") + " " + diana_build_string + "\n"
+      + tr("commit: ") + " " + diana_build_commit;
 
   QMessageBox::about( this, tr("about Diana"), str );
 }
@@ -3320,164 +3291,16 @@ void DianaMainWindow::sendSelectedStations(const std::string& command)
 
 void DianaMainWindow::catchKeyPress(QKeyEvent* ke)
 {
-  if (!em->inedit() && qsocket) {
-
-    if( ke->key() == Qt::Key_Plus || ke->key() == Qt::Key_Minus){
-      std::string dataset;
-      int id;
-      vector<std::string> stations;
-      contr->getEditStation(0,dataset,id,stations);
-      if (not dataset.empty()) {
-        miMessage letter;
-        letter.command = qmstrings::editposition;
-        letter.commondesc = "dataset";
-        letter.common = dataset;
-        if(ke->modifiers() & Qt::ControlModifier)
-          letter.description = "position:value_2";
-        else if(ke->modifiers() & Qt::AltModifier)
-          letter.description = "position:value_3";
-        else
-          letter.description = "position:value_1";
-        for(unsigned int i=0;i<stations.size();i++){
-          std::string str = stations[i];
-          if( ke->key() == Qt::Key_Plus )
-            str += ":+1";
-          else
-            str += ":-1";
-          letter.data.push_back(str);
-        }
-        letter.to = id;
-        sendLetter(letter);
-      }
-    }
-
-    else if( ke->modifiers() & Qt::ControlModifier){
-
-      if( ke->key() == Qt::Key_C ) {
-        sendSelectedStations(qmstrings::copyvalue);
-      }
-
-      else if( ke->key() == Qt::Key_U) {
-        contr->stationCommand("unselect");
-        sendSelectedStations(qmstrings::selectposition);
-        w->updateGL();
-      }
-
-      else {
-        std::string keyString;
-        if(ke->key() == Qt::Key_G) keyString = "ctrl_G";
-        else if(ke->key() == Qt::Key_S)  keyString = "ctrl_S";
-        else if(ke->key() == Qt::Key_Z)  keyString = "ctrl_Z";
-        else if(ke->key() == Qt::Key_Y)  keyString = "ctrl_Y";
-        else return;
-
-        miMessage letter;
-        letter.command    = qmstrings::sendkey;
-        letter.commondesc =  "key";
-        letter.common =  keyString;
-        letter.to = qmstrings::all;;
-        sendLetter(letter);
-      }
-    }
-
-    else if( ke->modifiers() & Qt::AltModifier){
-      std::string keyString;
-      if(ke->key() == Qt::Key_F5) keyString = "alt_F5";
-      else if(ke->key() == Qt::Key_F6) keyString = "alt_F6";
-      else if(ke->key() == Qt::Key_F7) keyString = "alt_F7";
-      else if(ke->key() == Qt::Key_F8) keyString = "alt_F8";
-      else return;
-
-      miMessage letter;
-      letter.command    = qmstrings::sendkey;
-      letter.commondesc =  "key";
-      letter.common =  keyString;
-      letter.to = qmstrings::all;
-      sendLetter(letter);
-    }
-
-
-    else if( ke->key() == Qt::Key_W || ke->key() == Qt::Key_S ) {
-      std::string name;
-      int id;
-      vector<std::string> stations;
-      int step = (ke->key() == Qt::Key_S) ? 1 : -1;
-      if(ke->modifiers() & Qt::ShiftModifier) name = "add";
-      contr->getEditStation(step,name,id,stations);
-      if (not name.empty() && not stations.empty()) {
-        miMessage letter;
-        letter.to = qmstrings::all;
-        //	METLIBS_LOG_DEBUG("To: "<<letter.to);
-        letter.command    = qmstrings::selectposition;
-        letter.commondesc =  "dataset";
-        letter.common     =  name;
-        letter.description =  "station";
-        letter.data.push_back(stations[0]);
-        sendLetter(letter);
-
-      }
-      w->updateGL();
-    }
-
-    else if( ke->key() == Qt::Key_N || ke->key() == Qt::Key_P ) {
-      //      int id=vselectAreas[ia].id;
-      miMessage letter;
-      letter.command = qmstrings::selectarea;
-      letter.description = "next";
-      if( ke->key() == Qt::Key_P )
-        letter.data.push_back("-1");
-      else
-        letter.data.push_back("+1");
-      letter.to = qmstrings::all;;
-      sendLetter(letter);
-    }
-
-    else if( ke->key() == Qt::Key_A || ke->key() == Qt::Key_D ) {
-      miMessage letter;
-      letter.command    = qmstrings::changetype;
-      if( ke->key() == Qt::Key_A )
-        letter.data.push_back("-1");
-      else
-        letter.data.push_back("+1");
-      letter.to = qmstrings::all;;
-      sendLetter(letter);
-    }
-
-    else if( ke->key() == Qt::Key_Escape) {
-      miMessage letter;
-      letter.command    = qmstrings::copyvalue;
-      letter.commondesc =  "dataset";
-      letter.description =  "name";
-      letter.to = qmstrings::all;;
-      sendLetter(letter);
-    }
-
-    //FIXME (?): Will resize stationplots when connected to a coserver, regardless of which other client(s) are connected.
-    if (ke->modifiers() & Qt::ControlModifier && ke->key() == Qt::Key_Plus) {
-      float current_scale = contr->getStationsScale();
-      contr->setStationsScale(current_scale + 0.1); //FIXME: No hardcoding of increment.
-      w->updateGL();
-    }
-    if (ke->modifiers() & Qt::ControlModifier && ke->key() == Qt::Key_Minus) {
-      float current_scale = contr->getStationsScale();
-      contr->setStationsScale(current_scale - 0.1); //FIXME: No hardcoding of decrement.
-      w->updateGL();
-    }
-
-  }
 }
 
 void DianaMainWindow::undo()
 {
-  if(em->inedit()){
+  if(em->inedit())
     em->undoEdit();
-  }else {
-    miMessage letter;
-    letter.command    = qmstrings::sendkey;
-    letter.commondesc =  "key";
-    letter.common =  "ctrl_Z";
-    letter.to = qmstrings::all;;
-    sendLetter(letter);
+  else {
+    EditItemManager *editm = EditItemManager::instance();
+    if (editm->isEditing())
+      editm->undo();
   }
 }
 
@@ -3486,12 +3309,9 @@ void DianaMainWindow::redo()
   if(em->inedit())
     em->redoEdit();
   else {
-    miMessage letter;
-    letter.command    = qmstrings::sendkey;
-    letter.commondesc =  "key";
-    letter.common =  "ctrl_Y";
-    letter.to = qmstrings::all;;
-    sendLetter(letter);
+    EditItemManager *editm = EditItemManager::instance();
+    if (editm->isEditing())
+      editm->redo();
   }
 }
 
@@ -3500,12 +3320,9 @@ void DianaMainWindow::save()
   if(em->inedit())
     em->saveEdit();
   else {
-    miMessage letter;
-    letter.command    = qmstrings::sendkey;
-    letter.commondesc =  "key";
-    letter.common =  "ctrl_S";
-    letter.to = qmstrings::all;;
-    sendLetter(letter);
+    EditItemManager *editm = EditItemManager::instance();
+    if (editm->isEditing())
+      editm->save();
   }
 }
 
@@ -3569,7 +3386,7 @@ void DianaMainWindow::writeLogFile()
   }
 
   LogFileIO logfile;
-  logfile.getSection("MAIN.LOG").addLines(writeLog(version_string, build_string));
+  logfile.getSection("MAIN.LOG").addLines(writeLog(VERSION, diana_build_string));
   logfile.getSection("CONTROLLER.LOG").addLines(contr->writeLog());
   logfile.getSection("MAP.LOG").addLines(mm->writeLog());
   logfile.getSection("FIELD.LOG").addLines( fm->writeLog());
@@ -3617,6 +3434,7 @@ void DianaMainWindow::readLogFile()
 
   METLIBS_LOG_INFO("READ " << logfilepath);
 
+  const std::string version_string(VERSION);
   readLog(logfile.getSection("MAIN.LOG").lines(), version_string, logVersion);
   contr->readLog(logfile.getSection("CONTROLLER.LOG").lines(), version_string, logVersion);
   mm->readLog(logfile.getSection("MAP.LOG").lines(), version_string, logVersion);
@@ -3691,7 +3509,13 @@ vector<string> DianaMainWindow::writeLog(const string& thisVersion, const string
   for (it = dialogs.begin(); it != dialogs.end(); ++it) {
     str = it->second->name() + ".pos " + miutil::from_number(it->second->x()) + " " + miutil::from_number(it->second->y());
     vstr.push_back(str);
-    str = it->second->name() + ".size " + miutil::from_number(it->second->width()) + " " + miutil::from_number(it->second->height());
+    if (it->second->extension() && it->second->extension()->isVisible()) {
+      if (it->second->orientation() == Qt::Horizontal)
+        str = it->second->name() + ".size " + miutil::from_number(it->second->width() - it->second->extension()->width()) + " " + miutil::from_number(it->second->height());
+      else
+        str = it->second->name() + ".size " + miutil::from_number(it->second->width()) + " " + miutil::from_number(it->second->height() - it->second->extension()->height());
+    } else
+      str = it->second->name() + ".size " + miutil::from_number(it->second->width()) + " " + miutil::from_number(it->second->height());
     vstr.push_back(str);
   }
 
@@ -4097,9 +3921,7 @@ void DianaMainWindow::addDialog(DataDialog *dialog)
     connect(action, SIGNAL(toggled(bool)), dialog, SLOT(setVisible(bool)));
     connect(action, SIGNAL(toggled(bool)), w, SLOT(updateGL()));
     showmenu->addAction(action);
-#if defined(SHOW_DRAWING_MODE_BUTTON_IN_MAIN_TOOLBAR)
     mainToolbar->addAction(action);
-#endif
   }
 }
 

@@ -353,8 +353,7 @@ bool FilledMap::plot(DiGLPainter* gl,
     opened = true;
   }
 
-  METLIBS_LOG_DEBUG("FilledMap::plot():" << filename);
-  METLIBS_LOG_WARN("FilledMap::plot():" << filename);
+  //METLIBS_LOG_DEBUG("FilledMap::plot():" << filename);
   gl->LineWidth(linewidth);
   if (linetype != 0xFFFF) {
     gl->LineStipple(1, linetype);

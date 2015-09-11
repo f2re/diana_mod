@@ -130,8 +130,6 @@ bool ShapeObject::changeProj()
         ty[j] *= DEG_TO_RAD;
       }
     }
-
-
     success &= getStaticPlot()->ProjToMap(projection, s->nvertices(), tx, ty);
 
     s->contours.clear();

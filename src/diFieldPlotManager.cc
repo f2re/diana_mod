@@ -33,6 +33,7 @@
 
 #include "diFieldPlotManager.h"
 #include "diPlotOptions.h"
+#include "diUtilities.h"
 
 #include <diField/diFieldFunctions.h>
 
@@ -47,23 +48,6 @@
 
 using namespace std;
 using namespace miutil;
-
-namespace {
-void appendText(std::string& text, const std::string& append, const std::string& separator=" ")
-{
-  if (append.empty())
-    return;
-  if (!text.empty())
-    text += separator;
-  text += append;
-}
-std::string appendedText(const std::string& text, const std::string& append, const std::string& separator=" ")
-{
-  std::string t(text);
-  appendText(t, append, separator);
-  return t;
-}
-} // namespace
 
 FieldPlotManager::FieldPlotManager(FieldManager* fm) :
       fieldManager(fm)
@@ -408,6 +392,25 @@ vector<miTime> FieldPlotManager::getFieldTime(const vector<string>& pinfos,
   return getFieldTime(request, updateSources);
 }
 
+miTime FieldPlotManager::getFieldReferenceTime(const string& pinfo)
+{
+  METLIBS_LOG_SCOPE();
+
+  std::string fspec1,fspec2;
+
+  // if difference, use first field
+  if (!splitDifferenceCommandString(pinfo,fspec1,fspec2))
+    fspec1 = pinfo;
+
+  std::string plotName;
+  FieldRequest request;
+  vector<std::string> paramNames;
+  parseString(pinfo, request, paramNames, plotName);
+
+  std::string timestr = fieldManager->getBestReferenceTime(request.modelName, request.refoffset, request.refhour);
+  return miTime(timestr);
+}
+
 void FieldPlotManager::getCapabilitiesTime(vector<miTime>& normalTimes,
     int& timediff, const std::string& pinfo, bool updateSources)
 {
@@ -441,28 +444,20 @@ void FieldPlotManager::getCapabilitiesTime(vector<miTime>& normalTimes,
 vector<std::string> FieldPlotManager::getFieldLevels(const std::string& pinfo)
 {
   vector<std::string> levels;
+  vector<FieldRequest> vfieldrequest;
+  std::string plotName;
+  std::string pin = pinfo;
+  parsePin(pin, vfieldrequest,plotName);
 
-  vector<std::string> tokens = miutil::split(pinfo, " ");
-  if (tokens.size() < 3 || tokens[0] != "FIELD") {
+  if ( !vfieldrequest.size() )
     return levels;
-  }
 
-  vector<FieldGroupInfo> vfgi;
-  std::string refTime;
-  getFieldGroups(tokens[1], refTime, true, vfgi);
-  for (unsigned int i = 0; i < vfgi.size(); i++) {
-    levels.push_back(vfgi[i].groupName);
-    int k = 0;
-    int n = vfgi[i].fieldNames.size();
-    while (k < n && vfgi[i].fieldNames[k] != tokens[2]) {
-      k++;
-    }
-    if (k < n) {
-      //      levels.push_back("Levelgroup:" + vfgi[i].groupName);
-      for (unsigned int j = 0; j < vfgi[i].levelNames.size(); j++) {
-        levels.push_back(vfgi[i].levelNames[j]);
-      }
-    }
+  map<std::string,FieldInfo> fieldInfo;
+  fieldManager->getFieldInfo(vfieldrequest[0].modelName, vfieldrequest[0].refTime, fieldInfo);
+  map<std::string,FieldInfo>::const_iterator ip =  fieldInfo.find(vfieldrequest[0].paramName);
+
+  if ( ip != fieldInfo.end() ) {
+    levels = ip->second.vlevels;
   }
 
   return levels;
@@ -549,7 +544,7 @@ void FieldPlotManager::makeFieldText(Field* fout, const std::string& plotName, b
       fieldtext += " " + fout->leveltext;
     }
   }
-  appendText(fieldtext, fout->idnumtext);
+  diutil::appendText(fieldtext, fout->idnumtext);
 
   if( !fout->analysisTime.undef() && !fout->validFieldTime.undef()) {
     fout->forecastHour = miutil::miTime::hourDiff(fout->validFieldTime, fout->analysisTime);
@@ -671,12 +666,12 @@ bool FieldPlotManager::makeDifferenceField(const std::string& fspec1,
     f1->modelName = "( " + text1[0] + " - " + text2[0] + " )";
   if (diff[1] && (diff[2] || diff[3])) {
     f1->name = "( " + text1[1];
-    appendText(f1->name, text1[2]);
-    appendText(f1->name, text1[3]);
+    diutil::appendText(f1->name, text1[2]);
+    diutil::appendText(f1->name, text1[3]);
 
     f1->name += " - " + text2[1];
-    appendText(f1->name, text2[2]);
-    appendText(f1->name, text2[3]);
+    diutil::appendText(f1->name, text2[2]);
+    diutil::appendText(f1->name, text2[3]);
 
     f1->name += " )";
     f1->leveltext.clear();
@@ -698,15 +693,15 @@ bool FieldPlotManager::makeDifferenceField(const std::string& fspec1,
     f1->timetext = "( " + text1[5] + " - " + text2[5] + " )";
   if (ndiff == 1) {
     f1->fieldText = f1->modelName + " " + f1->name;
-    appendText(f1->fieldText, f1->leveltext);
+    diutil::appendText(f1->fieldText, f1->leveltext);
     f1->text = f1->fieldText + " " + f1->progtext;
     f1->fulltext = f1->text + " " + f1->timetext;
   } else {
     if (nbgn == 1 && nend <= 3) {
-      appendText(text1[1], text1[2]);
-      appendText(text1[1], text1[3]);
-      appendText(text2[1], text2[2]);
-      appendText(text2[1], text2[3]);
+      diutil::appendText(text1[1], text1[2]);
+      diutil::appendText(text1[1], text1[3]);
+      diutil::appendText(text2[1], text2[2]);
+      diutil::appendText(text2[1], text2[3]);
 
       text1[2].clear();
       text1[3].clear();
@@ -726,19 +721,19 @@ bool FieldPlotManager::makeDifferenceField(const std::string& fspec1,
         for (int n = 1; n < nbgn; n++)
           ftext[t] += " " + text1[n];
       }
-      appendText(ftext[t], "(");
+      diutil::appendText(ftext[t], "(");
       for (int n = nbgn; n <= nend; n++)
-        appendText(ftext[t], text1[n]);
+        diutil::appendText(ftext[t], text1[n]);
 
       ftext[t] += " -";
 
       for (int n = nbgn; n <= nend; n++)
-        appendText(ftext[t], text2[n]);
+        diutil::appendText(ftext[t], text2[n]);
 
       ftext[t] += " )";
 
       for (int n = nend + 1; n <= nmax[t]; n++)
-        appendText(ftext[t], text1[n]);
+        diutil::appendText(ftext[t], text1[n]);
     }
     f1->fulltext = ftext[0];
     f1->text = ftext[1];
@@ -761,114 +756,95 @@ bool FieldPlotManager::makeDifferenceField(const std::string& fspec1,
   return fieldManager->makeDifferenceFields(fv, fv2);
 }
 
-void FieldPlotManager::getFieldGroups(const std::string& modelName, std::string refTime, bool plotGroups, vector<FieldGroupInfo>& vfgi)
+void FieldPlotManager::getFieldGroups(const std::string& modelName, std::string refTime, bool plotdefinitions, vector<FieldGroupInfo>& vfgi)
 {
-  int addFLindex = -1;
+  vfgi.clear();
 
-  fieldManager->getFieldGroups(modelName, refTime, vfgi);
+  map<std::string,FieldInfo> fieldInfo;
+  fieldManager->getFieldInfo(modelName, refTime, fieldInfo);
+  //fieldManager->getFieldGroups(modelName, refTime, vfgi);
+  map<std::string,FieldGroupInfo>mfgi;
 
-  //Return vfgi whith parameter names from file + computed parameters
-  if (!plotGroups)
-    return;
+  if ( !plotdefinitions ) {
+    map<std::string,FieldInfo>::iterator vi = fieldInfo.begin();
+    for(;vi !=fieldInfo.end(); vi++ ){
 
-  //replace parameters in vfgi with plots defined in setup
-  size_t nvfgi = vfgi.size();
+      FieldInfo plotInfo;
+      plotInfo = vi->second;
 
-  //replace fieldnames with plotnames
-  for (size_t i = 0; i < nvfgi; i++) {
-
-    std::map<std::string, std::vector<std::string> > plotNameLevels;
-
-    std::string zaxis = vfgi[i].zaxis;
-    if (zaxis.empty()) {
-       zaxis = "none";
-    } else if (zaxis == "pressure") {
-      addFLindex = i;
+      // add plot to FieldGroup
+      mfgi[plotInfo.groupName].fieldNames.push_back(plotInfo.fieldName);
+      mfgi[plotInfo.groupName].fields[plotInfo.fieldName]=plotInfo;
+      mfgi[plotInfo.groupName].groupName = plotInfo.groupName;
+      mfgi[plotInfo.groupName].plotDefinitions = false;
     }
 
-    //use groupname from setup if defined
-    if (groupNames.count(vfgi[i].groupName)) {
-      vfgi[i].groupName = groupNames[vfgi[i].groupName];
-    }
+  } else {
 
-    //sort fieldnames
-    set<std::string> set_fieldName;
-    set<std::string> set_standardName;
-    for (unsigned int l = 0; l < vfgi[i].fieldNames.size(); l++) {
-      set_fieldName.insert(vfgi[i].fieldNames[l]);
-    }
-
-    for (unsigned int l = 0; l < vfgi[i].standard_names.size(); l++) {
-      set_standardName.insert(vfgi[i].standard_names[l]);
-    }
-
-    //find plotNames
-    vector<std::string> plotNames;
     for (unsigned int j = 0; j < vPlotField.size(); j++) {
-        std::string plotName = vPlotField[j].name;
-        int ninput = 0; // number of input fields found
-        if (vPlotField[j].vcoord.size() > 0 && !vPlotField[j].vcoord.count(zaxis)  ) {
-          continue;
-        }
-        std::vector<std::string> levels;
-        for (unsigned int k = 0; k < vPlotField[j].input.size(); k++) {
-          std::string fieldName = vPlotField[j].input[k];
-          vector<std::string> vstr = miutil::split(fieldName,":");
-          fieldName = vstr[0];
-          if (vstr.size() == 2 && vstr[1] == "standard_name" ){
-            if ( !set_standardName.count(fieldName) ) {
-              break;
-            }
-            levels = vfgi[i].levelNames;
-            ninput++;
-          } else {
-            if (!set_fieldName.count(fieldName)) {
-              break;
-            }
-            if ( vfgi[i].levels.count(fieldName) ) {
-              levels = vfgi[i].levels[fieldName];
-            }
-            ninput++;
-          }
+      FieldInfo plotInfo;
+
+      size_t ninput = 0; // number of input fields found
+      for (size_t k = 0; k < vPlotField[j].input.size(); k++) {
+        std::string fieldName = vPlotField[j].input[k];
+        map<std::string,FieldInfo>::const_iterator ip;
+        std::vector<std::string> tokens = miutil::split(fieldName,":");
+        if ( tokens.size()==2 && tokens[1]=="standard_name") {
+          ip = fieldInfo.begin();
+          while ( ip != fieldInfo.end() && ip->second.standard_name != tokens[0])
+            ip++;
+        } else {
+          ip =fieldInfo.find(fieldName);
         }
 
-        if (ninput >= (int)vPlotField[j].input.size()) {
-          plotNames.push_back(plotName);
-          plotNameLevels[plotName] = levels;
+        if (ip == fieldInfo.end())
+          break;
+        if (vPlotField[j].vcoord.size() > 0 && !vPlotField[j].vcoord.count(ip->second.vcoord)  )
+          break;
+
+        if ( ninput == 0) {
+          plotInfo = ip->second;
+          plotInfo.fieldName = vPlotField[j].name;
+          if( !vPlotField[j].fieldgroup.empty() )
+            plotInfo.groupName = vPlotField[j].fieldgroup;
         }
+        ninput++;
       }
 
-    vfgi[i].fieldNames = plotNames;
-    vfgi[i].levels = plotNameLevels;
-  }
+      if (ninput == vPlotField[j].input.size()) {
 
-  //If pressurelevels, add flightlevels too. Just renaming levels
-  if (addFLindex > -1) {
-    FieldGroupInfo fgi = vfgi[addFLindex];
-    fgi.groupName = "flightlevel";
-    fgi.zaxis = "flightlevel";
-    std::map<std::string, std::vector<std::string> >::iterator it=vfgi[addFLindex].levels.begin();
-    for ( ; it != vfgi[addFLindex].levels.end(); ++it) {
-      for (size_t i=0; i<it->second.size(); ++i) {
-        fgi.levels[it->first][i] = FieldFunctions::getFlightLevel(it->second[i]);
+        //add flightlevels
+        if ( plotInfo.vcoord == "pressure" ) {
+          FieldInfo plotInfo_fl = plotInfo;
+          miutil::replace(plotInfo_fl.groupName,"pressure","flightlevel");
+          plotInfo_fl.vcoord = "flightlevel";
+          for (size_t i=0; i<plotInfo.vlevels.size(); ++i)
+            plotInfo_fl.vlevels[i] = FieldFunctions::getFlightLevel(plotInfo.vlevels[i]);
+          if ( groupNames.count(plotInfo_fl.groupName))
+            plotInfo_fl.groupName = groupNames[plotInfo_fl.groupName];
+
+          mfgi[plotInfo_fl.groupName].fieldNames.push_back(plotInfo_fl.fieldName);
+          mfgi[plotInfo_fl.groupName].fields[plotInfo_fl.fieldName]=plotInfo_fl;
+          mfgi[plotInfo_fl.groupName].groupName = plotInfo_fl.groupName;
+        }
+
+        // add plot to FieldGroup
+        if ( groupNames.count(plotInfo.groupName))
+          plotInfo.groupName = groupNames[plotInfo.groupName];
+        mfgi[plotInfo.groupName].fieldNames.push_back(plotInfo.fieldName);
+        mfgi[plotInfo.groupName].fields[plotInfo.fieldName]=plotInfo;
+        mfgi[plotInfo.groupName].groupName = plotInfo.groupName;
       }
+
     }
-    for (size_t i=0; i<vfgi[addFLindex].levelNames.size(); ++i) {
-      fgi.levelNames[i] = FieldFunctions::getFlightLevel(vfgi[addFLindex].levelNames[i]);
-    }
-    vfgi.push_back(fgi);
   }
 
-  //remove fieldgroups with no plots
-  vector<FieldGroupInfo>::iterator p = vfgi.begin();
-  for (; p != vfgi.end(); p++) {
-    if ( (*p).fieldNames.size() == 0 ) {
-      p = vfgi.erase(p);
-      if (p == vfgi.end())
-        break;
-    }
+  map<std::string,FieldGroupInfo>::iterator ifgi = mfgi.begin();
+  for(;ifgi !=mfgi.end();ifgi++){
+    vfgi.push_back(ifgi->second);
   }
 }
+
 
 std::string FieldPlotManager::getBestFieldReferenceTime(const std::string& model, int refOffset, int refHour)
 {
@@ -880,7 +856,7 @@ gridinventory::Grid FieldPlotManager::getFieldGrid(const std::string& model)
   return fieldManager->getGrid(model);
 }
 
-void FieldPlotManager::parseString( std::string& pin,
+void FieldPlotManager::parseString( const std::string& pin,
     FieldRequest& fieldrequest,
     vector<std::string>& paramNames,
     std::string& plotName )

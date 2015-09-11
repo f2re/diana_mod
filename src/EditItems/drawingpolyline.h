@@ -42,11 +42,15 @@ class PolyLine : public DrawingItemBase
 public:
   PolyLine(int = -1);
   virtual ~PolyLine();
-  virtual QDomNode toKML() const;
 
   virtual bool hit(const QPointF &, bool) const;
   virtual bool hit(const QRectF &) const;
   int hitLine(const QPointF &) const;
+
+  // Returns the item's geographic points in a form suitable for export.
+  virtual QList<QPointF> exportLatLonPoints() const;
+  // Sets the item's geographic points using an imported list.
+  virtual void importLatLonPoints(const QList<QPointF> &points);
 
   static qreal dist2(const QPointF &, const QPointF &);
   static qreal distance2(const QPointF &, const QPointF &, const QPointF &);

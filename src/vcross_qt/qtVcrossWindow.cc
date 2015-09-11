@@ -33,17 +33,19 @@
 
 #include "qtVcrossWindow.h"
 
-#include "qtVcrossStyleDialog.h"
 #include "qtVcrossAddPlotDialog.h"
+#include "qtVcrossReplaceModelDialog.h"
+#include "qtVcrossStyleDialog.h"
 
 #include "diLocationData.h"
 #include "diLogFile.h"
 #include "diUtilities.h"
 
-#include "qtActionButton.h"
 #include "qtUtility.h"
 #include "qtVcrossSetupDialog.h"
 #include "qtPrintManager.h"
+
+#include "EditItems/kml.h"
 
 #include <diField/VcrossUtil.h>
 
@@ -84,6 +86,7 @@
 #include "info.xpm"
 #include "icon_settings.xpm"
 #include "kill.xpm"
+#include "loop.xpm"
 #include "palette.xpm"
 
 using namespace vcross;
@@ -150,12 +153,38 @@ static const char LOG_WINDOW[] = "VCROSS.WINDOW.LOG";
 static const char LOG_SETUP[]  = "VCROSS.SETUP.LOG";
 static const char LOG_FIELD[]  = "VCROSS.FIELD.LOG";
 
+std::string posText(const QPoint& p)
+{
+  return miutil::from_number(p.x()) + " " + miutil::from_number(p.y());
+}
+
+std::string posIf(QWidget* widget, const QPoint& pos)
+{
+  return posText(widget ? widget->pos() : pos);
+}
+
+void moveIf(QWidget* widget, const QPoint& pos)
+{
+  if (widget)
+    widget->move(pos);
+}
+
+void hideIf(QWidget* widget)
+{
+  if (widget)
+    widget->hide();
+}
+
 } // namespace anonymous
 
 VcrossWindow::VcrossWindow(vcross::QtManager_p vcm)
   : QWidget(0)
   , ui(new Ui_VcrossWindow)
   , vcrossm(vcm)
+  , vcAddPlotDialog(0)
+  , vcReplaceModelDialog(0)
+  , vcStyleDialog(0)
+  , vcSetupDialog(0)
   , firstTime(true)
   , active(false)
   , mInFieldChangeGroup(false)
@@ -172,24 +201,13 @@ VcrossWindow::VcrossWindow(vcross::QtManager_p vcm)
   ui->comboTime->setModel(new MiTimeModel(std::vector<miutil::miTime>()));
 
   connect(ui->toggleCsEdit, SIGNAL(toggled(bool)),
-      SIGNAL(requestVcrossEditor(bool)));
+      this, SLOT(onToggleDrawEdit(bool)));
 
   ui->layerButtons->setManager(vcrossm);
   connect(ui->layerButtons, SIGNAL(requestStyleEditor(int)),
       this, SLOT(onRequestStyleEditor(int)));
 
   //connected dialogboxes
-  vcAddPlotDialog = new VcrossAddPlotDialog(this, vcrossm);
-  vcAddPlotDialog->setVisible(false);
-
-  vcStyleDialog = new VcrossStyleDialog(this);
-  vcStyleDialog->setManager(vcrossm);
-  vcStyleDialog->setVisible(false);
-
-  vcSetupDialog = new VcrossSetupDialog(this, vcrossm);
-  connect(vcSetupDialog, SIGNAL(SetupApply()), SLOT(changeSetup()));
-  connect(vcSetupDialog, SIGNAL(showsource(const std::string&, const std::string&)),
-      SIGNAL(requestHelpPage(const std::string&, const std::string&)));
 
   { vcross::QtManager* m = vcrossm.get();
     connect(m, SIGNAL(fieldChangeBegin(bool)),
@@ -236,9 +254,18 @@ void VcrossWindow::setupUi()
       this, SLOT(onAxisPosition(const QString&)));
 
   ui->actionAddField->setIcon(QPixmap(addempty_xpm));
-  new ActionButton(ui->toolAddField, ui->actionAddField, this);
+  diutil::addShortcutToTooltip(ui->actionAddField);
+  ui->toolAddField->setDefaultAction(ui->actionAddField);
 
-  ui->toolShowStyle->setIcon(QPixmap(palette_xpm));
+  ui->actionReplaceModel->setIcon(QPixmap(loop_xpm));
+  diutil::addShortcutToTooltip(ui->actionReplaceModel);
+  ui->toolReplaceModel->setDefaultAction(ui->actionReplaceModel);
+
+  ui->actionShowStyle->setIcon(QPixmap(palette_xpm));
+  diutil::addShortcutToTooltip(ui->actionShowStyle);
+  ui->toolShowStyle->setDefaultAction(ui->actionShowStyle);
+
+  ui->toolRemoveAllFields->setIcon(QPixmap(kill_xpm));
 
   ui->toggleTimeGraph->setIcon(QPixmap(clock_xpm));
   ui->buttonClose->setIcon(QPixmap(exit_xpm));
@@ -247,15 +274,21 @@ void VcrossWindow::setupUi()
   ui->buttonSave->setIcon(QPixmap(filesave));
   ui->buttonSettings->setIcon(QPixmap(icon_settings));
 
-  ui->toolRemoveAllFields->setIcon(QPixmap(kill_xpm));
-
   const QPixmap back(bakover_xpm), forward(forward_xpm);
 
-  ui->buttonCsPrevious->setIcon(back);
-  ui->buttonCsNext->setIcon(forward);
+  ui->actionPreviousCs->setIcon(back);
+  ui->actionNextCs->setIcon(forward);
+  diutil::addShortcutToTooltip(ui->actionPreviousCs);
+  diutil::addShortcutToTooltip(ui->actionNextCs);
+  ui->buttonCsPrevious->setDefaultAction(ui->actionPreviousCs);
+  ui->buttonCsNext->setDefaultAction(ui->actionNextCs);
 
-  ui->buttonTimePrevious->setIcon(back);
-  ui->buttonTimeNext->setIcon(forward);
+  ui->actionPreviousTime->setIcon(back);
+  ui->actionNextTime->setIcon(forward);
+  diutil::addShortcutToTooltip(ui->actionPreviousTime);
+  diutil::addShortcutToTooltip(ui->actionNextTime);
+  ui->buttonTimePrevious->setDefaultAction(ui->actionPreviousTime);
+  ui->buttonTimeNext->setDefaultAction(ui->actionNextTime);
 }
 
 
@@ -267,6 +300,7 @@ void VcrossWindow::onAxisPosition(const QString& text)
 
 void VcrossWindow::onRequestStyleEditor(int position)
 {
+  ensureStyleDialog();
   vcStyleDialog->showModelField(position);
   vcStyleDialog->show();
 }
@@ -274,10 +308,23 @@ void VcrossWindow::onRequestStyleEditor(int position)
 void VcrossWindow::onAddField()
 {
   METLIBS_LOG_SCOPE();
-  vcAddPlotDialog->restart();
+  if (!vcAddPlotDialog) {
+    vcAddPlotDialog = new VcrossAddPlotDialog(this, vcrossm);
+    vcAddPlotDialog->move(mPositionAddPlot);
+  }
   vcAddPlotDialog->show();
 }
 
+void VcrossWindow::onReplaceModel()
+{
+  METLIBS_LOG_SCOPE();
+  if (!vcReplaceModelDialog) {
+    vcReplaceModelDialog = new VcrossReplaceModelDialog(this, vcrossm);
+    vcReplaceModelDialog->move(mPositionReplaceModel);
+    vcReplaceModelDialog->restart();
+  }
+  vcReplaceModelDialog->show();
+}
 
 void VcrossWindow::onRemoveAllFields()
 {
@@ -285,14 +332,22 @@ void VcrossWindow::onRemoveAllFields()
   vcrossm->removeAllFields();
 }
 
-
 void VcrossWindow::onShowStyleDialog()
 {
+  ensureStyleDialog();
   if (vcrossm && vcrossm->getFieldCount() > 0)
     vcStyleDialog->showModelField(0);
   vcStyleDialog->show();
 }
 
+void VcrossWindow::ensureStyleDialog()
+{
+  if (!vcStyleDialog) {
+    vcStyleDialog = new VcrossStyleDialog(this);
+    vcStyleDialog->setManager(vcrossm);
+    vcStyleDialog->move(mPositionStyle);
+  }
+}
 
 void VcrossWindow::onFieldChangeBegin(bool fromScript)
 {
@@ -334,6 +389,11 @@ void VcrossWindow::onFieldChangeEnd()
   if (mInFieldChangeGroup && mGroupChangedFields)
     repaintPlot();
   mInFieldChangeGroup = mGroupChangedFields = false;
+}
+
+void VcrossWindow::onToggleDrawEdit(bool enableEdit)
+{
+  Q_EMIT requestVcrossEditor(enableEdit, vcrossm->isTimeGraph());
 }
 
 /***************************************************************************/
@@ -387,12 +447,11 @@ void VcrossWindow::crossectionListChangedSlot()
 void VcrossWindow::enableDynamicCsIfSupported()
 {
   METLIBS_LOG_SCOPE();
-  const bool supported = vcrossm->supportsDynamicCrossections();
-  const bool has_predefined = supported
-      && !vcrossm->getCrossectionPredefinitions().empty();
-
+  const bool supported = vcrossm->supportsDynamicCrossections(),
+      predefined = vcrossm->hasPredefinedDynamicCrossections(),
+      enabled = ui->toggleCsEdit->isChecked();
   ui->toggleCsEdit->setEnabled(supported);
-  ui->toggleCsEdit->setChecked(supported && !has_predefined);
+  ui->toggleCsEdit->setChecked(supported && (!predefined || enabled));
 }
 
 
@@ -406,7 +465,7 @@ void VcrossWindow::crossectionBoxActivated(int index)
 void VcrossWindow::stepTime(int direction)
 {
   METLIBS_LOG_SCOPE(LOGVAL(direction));
-  const int step = std::max(ui->timeSpinBox->value(), 1)
+  const int step = ui->comboTimeStep->currentText().toInt()
       * (direction < 0 ? -1 : 1);
 
   const int ntimes = vcrossm->getTimeCount();
@@ -450,7 +509,7 @@ void VcrossWindow::timeListChangedSlot()
   ui->comboTime->setEnabled(enabled);
   ui->buttonTimePrevious->setEnabled(enabled);
   ui->buttonTimeNext->setEnabled(enabled);
-  ui->timeSpinBox->setEnabled(enabled);
+  ui->comboTimeStep->setEnabled(enabled);
 
   enableTimeGraphIfSupported();
 }
@@ -467,6 +526,8 @@ void VcrossWindow::timeGraphModeChangedSlot(bool on)
   METLIBS_LOG_SCOPE(LOGVAL(on));
   if (on != ui->toggleTimeGraph->isChecked())
     ui->toggleTimeGraph->setChecked(on);
+  if (ui->toggleCsEdit->isChecked())
+    Q_EMIT requestVcrossEditor(true, vcrossm->isTimeGraph());
   timeListChangedSlot();
 }
 
@@ -520,6 +581,12 @@ void VcrossWindow::saveClicked()
 
 void VcrossWindow::onShowSetupDialog()
 {
+  if (!vcSetupDialog) {
+    vcSetupDialog = new VcrossSetupDialog(this, vcrossm);
+    connect(vcSetupDialog, SIGNAL(SetupApply()), SLOT(changeSetup()));
+    connect(vcSetupDialog, SIGNAL(showsource(const std::string&, const std::string&)),
+        SIGNAL(requestHelpPage(const std::string&, const std::string&)));
+  }
   vcSetupDialog->start();
   vcSetupDialog->show();
 }
@@ -531,8 +598,11 @@ void VcrossWindow::timeGraphClicked(bool on)
   // called when the timeGraph button is clicked
   METLIBS_LOG_SCOPE("on=" << on);
 
-  if (on != vcrossm->isTimeGraph())
+  if (on != vcrossm->isTimeGraph()) {
     vcrossm->switchTimeGraph(on);
+    if (ui->toggleCsEdit->isChecked())
+      Q_EMIT requestVcrossEditor(true, on);
+  }
 }
 
 /***************************************************************************/
@@ -545,7 +615,10 @@ void VcrossWindow::quitClicked()
   active = false;
   Q_EMIT VcrossHide();
   hide();
-  vcStyleDialog->setVisible(false);
+  hideIf(vcAddPlotDialog);
+  hideIf(vcReplaceModelDialog);
+  hideIf(vcSetupDialog);
+  hideIf(vcStyleDialog);
 
 #if 0
   // cleanup selections in dialog and data in memory
@@ -579,14 +652,23 @@ void VcrossWindow::slotCheckEditmode(bool editing)
     ui->toggleCsEdit->setChecked(editing);
 }
 
+static QList<QPointF> toQPointList(const QList<QVariant>& qvariantList)
+{
+  QList<QPointF> points;
+  points.reserve(qvariantList.size());
+  for (QList<QVariant>::const_iterator it = qvariantList.begin(); it != qvariantList.end(); ++it)
+    points << it->toPointF();
+  return points;
+}
+
 void VcrossWindow::dynCrossEditManagerChange(const QVariantMap &props)
 {
   METLIBS_LOG_SCOPE();
 
   // these have to match the keys used by EditItemManager::emitItemChanged
-  const char KEY_POINTS[] = "latLonPoints", KEY_ID[] = "id", KEY_NAME[] = "Placemark:name";
+  const char KEY_POINTS[] = "latLonPoints", KEY_ID[] = "id", KEY_NAME[] = "Placemark:name", KEY_TYPE[] = "type";
 
-  if (not (props.contains(KEY_POINTS) and props.contains(KEY_ID)))
+  if (not (props.contains(KEY_POINTS) and props.contains(KEY_ID) and props.contains(KEY_TYPE)))
     return;
 
   QString label;
@@ -594,15 +676,20 @@ void VcrossWindow::dynCrossEditManagerChange(const QVariantMap &props)
     label = props.value(KEY_NAME).toString();
   if (label.isEmpty())
     label = QString("dyn_%1").arg(props.value(KEY_ID).toInt());
-  
-  vcross::LonLat_v points;
-  foreach (QVariant v, props.value(KEY_POINTS).toList()) {
-    const QPointF p = v.toPointF();
-    const float lat = p.x(), lon = p.y(); // FIXME swpa x <-> y
-    points.push_back(LonLat::fromDegrees(lon, lat));
+
+  const QList<QPointF> qpoints = toQPointList(props.value(KEY_POINTS).toList());
+  const vcross::LonLat_v points = KML::latLonDegQPointsToLonLat(qpoints);
+  if (vcrossm->isTimeGraph()) {
+    if (points.size() != 1)
+      return;
+    if (!props.value(KEY_TYPE).toString().contains(TIME_GRAPH_TYPE))
+      return;
+  } else {
+    if (points.size() < 2)
+      return;
+    if (!props.value(KEY_TYPE).toString().contains(CROSS_SECTION_TYPE))
+      return;
   }
-  if (points.size() < 2)
-    return;
 
   vcrossm->addDynamicCrossection(label, points);
 }
@@ -652,14 +739,11 @@ void VcrossWindow::writeLog(LogFileIO& logfile)
   { LogFileIO::Section& sec_window = logfile.getSection(LOG_WINDOW);
     sec_window.addLine("VcrossWindow.size " + miutil::from_number(width()) + " "
         + miutil::from_number(height()));
-    sec_window.addLine("VcrossWindow.pos " + miutil::from_number(x()) + " "
-        + miutil::from_number(y()));
-    sec_window.addLine("VcrossDialog.pos "  + miutil::from_number(vcAddPlotDialog->x()) + " "
-        + miutil::from_number(vcAddPlotDialog->y()));
-    sec_window.addLine("VcrossSetupDialog.pos " + miutil::from_number(vcSetupDialog->x()) + " "
-        + miutil::from_number(vcSetupDialog->y()));
-    sec_window.addLine("VcrossStyleDialog.pos " + miutil::from_number(vcStyleDialog->x()) + " "
-        + miutil::from_number(vcStyleDialog->y()));
+    sec_window.addLine("VcrossWindow.pos " + posText(this->pos()));
+    sec_window.addLine("VcrossDialog.pos "  + posIf(vcAddPlotDialog, mPositionAddPlot));
+    sec_window.addLine("VcrossSetupDialog.pos " + posIf(vcSetupDialog, mPositionSetup));
+    sec_window.addLine("VcrossStyleDialog.pos " + posIf(vcStyleDialog, mPositionStyle));
+    sec_window.addLine("VcrossReplaceModelDialog.pos " + posIf(vcReplaceModelDialog, mPositionReplaceModel));
 
     // printer name & options...
     if (not priop.printer.empty()){
@@ -678,7 +762,6 @@ void VcrossWindow::writeLog(LogFileIO& logfile)
   }
 }
 
-
 void VcrossWindow::readLog(const LogFileIO& logfile,
     const std::string& thisVersion, const std::string& logVersion,
     int displayWidth, int displayHeight)
@@ -688,16 +771,16 @@ void VcrossWindow::readLog(const LogFileIO& logfile,
       const std::vector<std::string> tokens = miutil::split(sec_window[i], 0, " ");
       if (tokens.size()==3) {
 
-        int x= atoi(tokens[1].c_str());
-        int y= atoi(tokens[2].c_str());
-        if (x>20 && y>20 && x<=displayWidth && y<=displayHeight) {
-          if (tokens[0]=="VcrossWindow.size") this->resize(x,y);
+        const QPoint p(miutil::to_int(tokens[1]), miutil::to_int(tokens[2]));
+        if (p.x() > 20 && p.y() > 20 && p.x() <= displayWidth && p.y() <= displayHeight) {
+          if (tokens[0]=="VcrossWindow.size") this->resize(p.x(), p.y());
         }
-        if (x>=0 && y>=0 && x<displayWidth-20 && y<displayHeight-20) {
-          if      (tokens[0]=="VcrossWindow.pos")      this->move(x,y);
-          else if (tokens[0]=="VcrossDialog.pos")      vcAddPlotDialog->move(x, y);
-          else if (tokens[0]=="VcrossSetupDialog.pos") vcSetupDialog->move(x,y);
-          else if (tokens[0]=="VcrossStyleDialog.pos") vcStyleDialog->move(x,y);
+        if (p.x() >= 0 && p.y() >= 0 && p.x() < displayWidth-20 && p.y() < displayHeight-20) {
+          if      (tokens[0]=="VcrossWindow.pos")      this->move(p);
+          else if (tokens[0]=="VcrossDialog.pos")      moveIf(vcAddPlotDialog, mPositionAddPlot = p);
+          else if (tokens[0]=="VcrossSetupDialog.pos") moveIf(vcSetupDialog, mPositionSetup = p);
+          else if (tokens[0]=="VcrossStyleDialog.pos") moveIf(vcStyleDialog, mPositionStyle = p);
+          else if (tokens[0]=="VcrossReplaceModelDialog.pos") moveIf(vcReplaceModelDialog, mPositionReplaceModel = p);
         }
 
       } else if (tokens.size()>=2) {

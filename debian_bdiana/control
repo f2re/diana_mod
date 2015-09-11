@@ -4,15 +4,15 @@ Priority: extra
 Maintainer: Norwegian Meteorological Institute met.no <diana@met.no>
 Build-Depends: debhelper (>= 7.4.15), g++,
  perl, lsb-release, autoconf (>=2.61), automake (>= 1.10),
- libtool (>= 1.5),
- qt4-qmake-headless, libqt4-headless-dev, libemos-dev,
- metlibs-miraster-dev (>= 5.0.0), metlibs-difield-dev (>= 5.0.0),
+ libtool (>= 1.5), qt4-qmake-headless, libqt4-headless-dev,
+ metlibs-putools-dev (>= 5.0.0), metlibs-milogger-dev (>= 5.0.0),
  metlibs-pudatatypes-dev (>= 5.0.0),
- metlibs-milogger-dev (>= 5.0.0), metlibs-puctools-dev (>= 5.0.0),
- libboost-date-time-dev, libboost-regex-dev, libboost-thread-dev,
- libboost-system-dev, libgeotiff-dev, libshp-dev, libpng-dev,
- libavformat-dev,
- cmake, libgtest-dev, libudunits2-dev
+ libfimex-dev (>= 0.57),
+ libboost-date-time-dev, libboost-filesystem-dev, libboost-regex-dev,
+ libboost-system-dev, libboost-thread-dev,
+ libtiff-dev, libgeotiff-dev, libpng-dev, libudunits2-dev, libproj-dev,
+ libavformat-dev, libshp-dev, libemos-dev,
+ cmake, libgtest-dev
 Build-Conflicts: autoconf2.13, automake1.4
 Standards-Version: 3.9.2
 
@@ -36,7 +36,7 @@ Architecture: any
 Section: perl
 Conflicts: libmetno-bdiana-perl@METNO_SUFFIX@
 Provides:libmetno-bdiana-perl@METNO_SUFFIX@
-Depends: ${shlibs:Depends}, ${perl:Depends}, ${misc:Depends},
+Depends: bdiana-@PVERSION_MAJOR_DOT_MINOR@, ${perl:Depends}, ${misc:Depends},
  diana-@PVERSION_MAJOR_DOT_MINOR@-common
 Description: Meteorological visualisation tool, perl binding
  Diana is the core visualisation tool from met.no (Norwegian
@@ -46,20 +46,3 @@ Description: Meteorological visualisation tool, perl binding
  meteorological and oceanographic data.
  This package provides a version of Diana for batched generation of
  products via perl.
-
-
-Package: bdiana-dev
-Architecture: any
-Section: libdevel
-Depends: bdiana-@PVERSION_MAJOR_DOT_MINOR@, ${shlibs:Depends}, ${misc:Depends}
-Conflicts: diana-headless-dev
-Replaces: diana-headless-dev
-Description: Meteorological visualisation tool
- Diana is the core visualisation tool from met.no (Norwegian
- Meteorological Institute) and is distributed under the GPL
- license. See gpl.txt for details concerning the GPL license.
- Diana is a graphical viewer and editor developed for use with
- meteorological and oceanographic data.
- This package provides development files required to build
- additional libraries and tools against a version of Diana for
- batched generation of products.

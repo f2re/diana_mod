@@ -63,7 +63,7 @@ QuickEditOptions::QuickEditOptions(QWidget* parent, vector<quickMenuOption>& opt
   , options(opt)
   , keynum(-1)
 {
-  QFont m_font= QFont("Arial", 12, 75);
+  QFont m_font= QFont("Helvetica", 12, 75);
 
   QLabel* mainlabel= new QLabel("<em><b>"+tr("Change Dynamic Options")+"</b></em>", this);
   mainlabel->setFrameStyle(QFrame::StyledPanel | QFrame::Raised);

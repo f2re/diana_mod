@@ -261,30 +261,17 @@ bool DrawingManager::processInput(const std::vector<std::string>& inp)
     else
       fileName = name;
 
-    // Is the file already loaded?
-    bool isLoaded = false;
     EditItems::ItemGroup *group;
 
-    for (itl = itemGroups_.begin(); itl != itemGroups_.end(); ++itl) {
-      group = itl.value();
-      if (group->fileName() == fileName) {
-        isLoaded = true;
-        break;
-      }
-    }
-
-    // If not, try to load it.
-    if (!isLoaded) {
-      if (!loadDrawing(name, fileName).isEmpty())
-        return false;
-
-      // Obtain the group created by the loadDrawing() call.
+    // Load the file, whether it was previously loaded or not.
+    QString error = loadDrawing(name, fileName);
+    if (error.isEmpty()) {
+      // Obtain the group created by the loadDrawing call.
       group = itemGroups_.value(name);
+      // Record the layer group in the collection of replacement drawings.
+      loaded[name] = group;
+      loaded_[name] = fileName;
     }
-
-    // Record the layer group in the collection of replacement drawings.
-    loaded[name] = group;
-    loaded_[name] = fileName;
   }
 
   // Delete layer groups that are no longer loaded and replace the list with
@@ -351,18 +338,18 @@ DrawingItemBase *DrawingManager::createItemFromVarMap(const QVariantMap &vmap, Q
   return item;
 }
 
-void DrawingManager::addItem_(DrawingItemBase *item, EditItems::ItemGroup *group)
-{
-  group->addItem(item);
-}
-
 QString DrawingManager::loadDrawing(const QString &name, const QString &fileName)
 {
   QString error;
 
+  bool exists = itemGroups_.contains(name);
+  QDateTime lastModified = QFileInfo(fileName).lastModified();
+  if (exists && lastModified <= lastUpdated_.value(name))
+    return error;
+
   QList<DrawingItemBase *> items = KML::createFromFile(name, fileName, error);
   if (!error.isEmpty()) {
-    METLIBS_LOG_SCOPE("Failed to open file: " << fileName.toStdString());
+    METLIBS_LOG_WARN("Failed to open file: " << fileName.toStdString());
     return error;
   }
 
@@ -370,18 +357,22 @@ QString DrawingManager::loadDrawing(const QString &name, const QString &fileName
   EditItems::ItemGroup *itemGroup = new EditItems::ItemGroup(name, false, true);
   itemGroup->setFileName(fileName);
   itemGroup->setItems(items);
+
+  // If an group exists with the same name, delete it before inserting the
+  // new group into the map.
+  if (exists)
+    delete itemGroups_.value(name);
+
+  // Update the item groups map, but also keep a record of when files were
+  // last updated.
   itemGroups_[name] = itemGroup;
+  lastUpdated_[name] = lastModified;
 
   // Record the file name.
   drawings_[name] = fileName;
   emit drawingLoaded(name);
 
   return error;
-}
-
-void DrawingManager::removeItem_(DrawingItemBase *item, EditItems::ItemGroup *group)
-{
-  group->removeItem(item);
 }
 
 QList<QPointF> DrawingManager::getLatLonPoints(const DrawingItemBase *item) const
@@ -471,17 +462,15 @@ bool DrawingManager::prepare(const miutil::miTime &time)
   std::vector<miutil::miTime>::const_iterator it;
   std::vector<miutil::miTime> times = getTimes();
 
-  for (it = times.begin(); it != times.end(); ++it) {
-    if (*it == time) {
-      found = true;
-      break;
-    }
+  found = find(times.begin(), times.end(), time) != times.end();
+
+  QDateTime dateTime;
+  if (!time.undef()) {
+    QString timeStr = QString::fromStdString(time.isoTime());
+    dateTime = QDateTime::fromString(timeStr, Qt::ISODate);
   }
 
   // Update layer groups to change the visibility of items.
-  QString timeStr = QString::fromStdString(time.isoTime());
-  QDateTime dateTime = QDateTime::fromString(timeStr, Qt::ISODate);
-
   QMap<QString, EditItems::ItemGroup *>::iterator itl;
   for (itl = itemGroups_.begin(); itl != itemGroups_.end(); ++itl) {
 
@@ -504,7 +493,7 @@ bool DrawingManager::prepare(const miutil::miTime &time)
         QString error;
         QList<DrawingItemBase *> items = KML::createFromFile(itemGroup->name(), fileName, error);
         if (!error.isEmpty())
-          METLIBS_LOG_WARN(QString("DrawingManager::prepare: failed to load layer group from %1: %2")
+          METLIBS_LOG_WARN(QString("DrawingManager::prepare: failed to load items from %1: %2")
                            .arg(fileName).arg(error).toStdString());
 
         itemGroup->setItems(items);
@@ -515,6 +504,7 @@ bool DrawingManager::prepare(const miutil::miTime &time)
     itemGroup->setTime(dateTime, allVisible);
   }
 
+  emit timesUpdated();
   return found;
 }
 
@@ -731,6 +721,17 @@ vector<PolyLineInfo> DrawingManager::loadCoordsFromKML(const string &fileName)
   return info;
 }
 
+bool DrawingManager::isEmpty() const
+{
+  QMap<QString, EditItems::ItemGroup *>::const_iterator it;
+  for (it = itemGroups_.begin(); it != itemGroups_.end(); ++it) {
+    if (!it.value()->isEmpty())
+      return false;
+  }
+
+  return true;
+}
+
 QList<DrawingItemBase *> DrawingManager::allItems() const
 {
   QList<DrawingItemBase *> items;
@@ -749,10 +750,12 @@ QList<DrawingItemBase *> DrawingManager::allItems() const
  */
 bool DrawingManager::isItemVisible(DrawingItemBase *item) const
 {
-  bool visible = item->isVisible();
-  if (!visible) return false;
-
-  return matchesFilter(item);
+  if (allItemsVisible_)
+    return true;
+  else if (!item->isVisible())
+    return false;
+  else
+    return matchesFilter(item);
 }
 
 /**
@@ -760,29 +763,26 @@ bool DrawingManager::isItemVisible(DrawingItemBase *item) const
  */
 bool DrawingManager::matchesFilter(DrawingItemBase *item) const
 {
-  // Each item is visible if none of its properties match those in the
-  // property list. Otherwise, items are invisible by default.
-  bool visible = false;
-  bool hasAtLeastOneProperty = false;
+  // Each item is visible only if it contains all of the properties contained
+  // in the filter with values from those provided by the filter.
 
-  foreach (const QString &property, filter_.first) {
+  foreach (const QString &property, filter_.keys()) {
     QVariant value = item->property(property);
-    hasAtLeastOneProperty |= value.isValid();
-    if (value.isValid() && filter_.second.contains(value.toString())) {
-      visible = true;
-      break;
-    }
+    if (!value.isValid() || !filter_.value(property).contains(value.toString()))
+      return false;
   }
 
-  if (hasAtLeastOneProperty)
-    return visible;
-  else
-    return true;
+  return true;
 }
 
-void DrawingManager::setFilter(const QPair<QStringList, QSet<QString> > &filter)
+void DrawingManager::setFilter(const QHash<QString, QStringList> &filter)
 {
   filter_ = filter;
+}
+
+void DrawingManager::setAllItemsVisible(bool enable)
+{
+  allItemsVisible_ = enable;
 }
 
 /**

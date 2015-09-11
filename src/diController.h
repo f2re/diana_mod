@@ -202,8 +202,6 @@ public:
   bool printTrajectoryPositions(const std::string& filename);
   /// get field models used (for Vprof etc.)
   std::vector<std::string> getFieldModels();
-  /// obs time step changed
-  void obsStepChanged(int);
   /// get name++ of current channels (with calibration)
   std::vector<std::string> getCalibChannels();
   /// show pixel values in status bar
@@ -291,6 +289,8 @@ public:
   std::set<std::string> getFieldReferenceTimes(const std::string model);
   ///return the reference time given by refOffset and refhour or the last reference time for the given model
   std::string getBestFieldReferenceTime(const std::string& model, int refOffset, int refHour);
+  ///return referenceTime of first FieldPlot
+  miutil::miTime getFieldReferenceTime();
   /// return plot options for all defined plot fields in setup
   void getAllFieldNames(std::vector<std::string>& fieldNames);
   ///return levels
@@ -304,7 +304,7 @@ public:
 
   // Map-dialog methods
   MapDialogInfo initMapDialog();
-  bool MapInfoParser(std::string& str, MapInfo& mi, bool tostr);
+  bool MapInfoParser(std::string& str, MapInfo& mi, bool tostr, bool map);
 
   // Edit-dialog methods --------
   /// returns current EditDialogInfo for gui
@@ -335,8 +335,6 @@ public:
   std::vector<std::string> findStations(int, int, const std::string& name, int id=-1);
   void findStations(int, int, bool add, std::vector<std::string>& name, std::vector<int>& id,
       std::vector<std::string>& station);
-  void getEditStation(int step, std::string& name, int& id,
-      std::vector<std::string>& stations);
   void getStationData(std::vector<std::string>& data);
   void stationCommand(const std::string& Command,
       const std::vector<std::string>& data,

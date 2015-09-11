@@ -98,7 +98,7 @@ void TextDialog::setSource(const InfoFile ifile){
 
   const std::string xml_type= "text/xml;charset=UTF-8";
   const std::string txt_type= "text/plain";
-  const std::string htm_type= "text/html;charset=utf-8";
+  const std::string htm_type= "text/html;charset=iso8859-1";
 
   infofile= ifile;
   if (not infofile.name.empty()){
@@ -131,7 +131,7 @@ void TextDialog::setSource(const InfoFile ifile){
       int psize= font().pointSize();
       tb->setFont(QFont("Courier", psize, QFont::Normal));
     } else {
-      tb->setFont(QFont("Arial", 10, QFont::Normal));
+      tb->setFont(QFont("Helvetica", 10, QFont::Normal));
       //tb->unsetFont();
     }
 
@@ -162,7 +162,7 @@ void TextDialog::fixedfont()
     tb->setFont(QFont("Courier", psize, QFont::Normal));
   } else {
     //    tb->unsetFont();
-    tb->setFont(QFont("Arial", 10, QFont::Normal));
+    tb->setFont(QFont("Helvetica", 10, QFont::Normal));
   }
   tb->update();
 

@@ -55,37 +55,25 @@ FilterDrawingWidget::FilterDrawingWidget(QWidget *parent)
   connect(editm_, SIGNAL(itemChanged(const QVariantMap &)), SLOT(updateChoices()));
   connect(editm_, SIGNAL(itemRemoved(int)), SLOT(updateChoices()));
   connect(editm_, SIGNAL(itemStatesReplaced()), SLOT(updateChoices()));
+  connect(editm_, SIGNAL(editing(bool)), SLOT(updateChoices()));
 
   propertyList_ = new QTreeView();
   propertyModel_ = new FilterDrawingModel(tr("Properties"), this);
   propertyList_->setModel(propertyModel_);
   propertyList_->setSelectionMode(QAbstractItemView::MultiSelection);
-  propertyList_->setRootIsDecorated(false);
   propertyList_->setSortingEnabled(true);
+  propertyList_->setItemsExpandable(false);
   connect(propertyList_->selectionModel(),
     SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-    SLOT(updateValues()));
-
-  valueList_ = new QTreeView();
-  valueModel_ = new FilterDrawingModel(tr("Values"), this);
-  valueList_->setModel(valueModel_);
-  valueList_->setSelectionMode(QAbstractItemView::MultiSelection);
-  valueList_->setRootIsDecorated(false);
-  valueList_->setSortingEnabled(true);
-  connect(valueList_->selectionModel(),
-    SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
     SLOT(filterItems()));
-
-  QVBoxLayout *viewLayout = new QVBoxLayout;
-  viewLayout->addWidget(propertyList_);
-  viewLayout->addWidget(valueList_);
+  connect(propertyModel_, SIGNAL(modelReset()), propertyList_, SLOT(expandAll()));
 
   QFrame *separator = new QFrame();
   separator->setFrameShape(QFrame::VLine);
 
   QHBoxLayout *mainLayout = new QHBoxLayout(this);
   mainLayout->addWidget(separator);
-  mainLayout->addLayout(viewLayout);
+  mainLayout->addWidget(propertyList_);
   //mainLayout->addWidget(editm_->getUndoView());
 }
 
@@ -100,95 +88,128 @@ FilterDrawingWidget::~FilterDrawingWidget()
 void FilterDrawingWidget::updateChoices()
 {
   Properties::PropertiesEditor *ed = Properties::PropertiesEditor::instance();
-  QSet<QString> show = QSet<QString>::fromList(ed->propertyRules("show"));
-  QSet<QString> hide = QSet<QString>::fromList(ed->propertyRules("hide"));
+  QSet<QString> show;
+  QSet<QString> hide;
 
-  QSet<QString> keep;
-  QSet<QString> discard;
+  if (editm_->isEditing()) {
+    show = QSet<QString>::fromList(ed->propertyRules("show-editing"));
+    hide = QSet<QString>::fromList(ed->propertyRules("hide-editing"));
+  } else {
+    show = QSet<QString>::fromList(ed->propertyRules("show-drawing"));
+    hide = QSet<QString>::fromList(ed->propertyRules("hide-drawing"));
+  }
+
+  QHash<QString, QSet<QString> > choices;
 
   foreach (DrawingItemBase *item, editm_->allItems() + drawm_->allItems()) {
+
     const QVariantMap &props = item->propertiesRef();
     foreach (const QString &key, props.keys()) {
+
+      bool keep = false;
+      bool discard = false;
+
       foreach (const QString &section, show) {
         if (key.startsWith(section)) {
-          keep.insert(key);
+          keep = true;
           break;
         }
       }
       foreach (const QString &section, hide) {
         if (key.startsWith(section)) {
-          discard.insert(key);
+          discard = true;
           break;
         }
       }
+
+      if (keep && !discard)
+        choices[key].insert(props.value(key).toString());
     }
   }
 
-  propertyModel_->setStringList((keep - discard).toList());
-  updateValues();
-}
+  QHash<QString, QStringList> prepared;
+  for (QHash<QString, QSet<QString> >::const_iterator it = choices.begin(); it != choices.end(); ++it) {
+    QStringList valueList = it.value().toList();
+    valueList.sort();
+    prepared[it.key()] = valueList;
+  }
 
-void FilterDrawingWidget::updateValues()
-{
-  QStringList properties = currentProperties();
-  QSet<QString> values;
+  // Record the currently selected filter values.
+  QHash<QString, QStringList> selected;
 
-  foreach (DrawingItemBase *item, editm_->allItems() + drawm_->allItems()) {
-    foreach (const QString &property, properties) {
-      QVariant value = item->property(property);
-      if (value.isValid())
-        values.insert(value.toString());
+  foreach (const QModelIndex &index, propertyList_->selectionModel()->selectedIndexes()) {
+    if (index.parent().isValid()) {
+      QString name = index.parent().data().toString();
+      QStringList values = selected.value(name);
+      values.append(index.data().toString());
+      selected[name] = values;
     }
   }
 
-  valueModel_->setStringList(values.toList());
+  // Replace the properties in the model with the ones for the current objects.
+  propertyModel_->setProperties(prepared);
+
+  // Repopulate the selection model for the filter list.
+  propertyList_->selectionModel()->reset();
+  QItemSelection selection;
+
+  foreach (const QString &name, selected.keys()) {
+    // Find the properties whose values were previously selected.
+    foreach (const QString &value, selected.value(name)) {
+      QModelIndex index = propertyModel_->find(name, value);
+      if (index.isValid())
+        selection.select(index, index);
+    }
+  }
+
+  propertyList_->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect);
+
+  // The available properties may have changed, causing the filters to be
+  // invalid, so ensure that they are updated.
   filterItems();
 }
 
 /**
- * Returns the selected properties in the property list, or all available
- * properties if none are selected.
+ * Returns the selected properties in the property list.
  */
-QStringList FilterDrawingWidget::currentProperties() const
+QHash<QString, QStringList> FilterDrawingWidget::currentProperties() const
 {
   QModelIndexList indexes = propertyList_->selectionModel()->selectedIndexes();
-  QStringList properties;
+  QHash<QString, QStringList> choices;
 
-  if (!indexes.isEmpty()) {
-    foreach (const QModelIndex &index, indexes)
-      properties.append(index.data().toString());
-  } else
-    properties = propertyModel_->stringList();
+  // Find all selected values and insert them into the hash under their
+  // associated properties.
+  foreach (const QModelIndex &index, indexes) {
+    if (index.parent().isValid())
+      choices[index.parent().data().toString()].append(index.data().toString());
+  }
 
-  return properties;
+  return choices;
 }
 
 /**
- * Returns the values for each of the current properties.
+ * Sets the filters for the drawing and editing managers using the current
+ * set of selected properties and values.
  */
-QSet<QString> FilterDrawingWidget::currentValues() const
-{
-  QModelIndexList indexes = valueList_->selectionModel()->selectedIndexes();
-  QSet<QString> values;
-
-  if (!indexes.isEmpty()) {
-    foreach (const QModelIndex &index, indexes)
-      values.insert(index.data().toString());
-  } else
-    values = QSet<QString>::fromList(valueModel_->stringList());
-
-  return values;
-}
-
 void FilterDrawingWidget::filterItems()
 {
-  QStringList properties = currentProperties();
-  QSet<QString> values = currentValues();
+  QHash<QString, QStringList> filter = currentProperties();
 
-  drawm_->setFilter(QPair<QStringList, QSet<QString> >(properties, values));
-  editm_->setFilter(QPair<QStringList, QSet<QString> >(properties, values));
+  drawm_->setFilter(filter);
+  editm_->setFilter(filter);
 
   emit updated();
+}
+
+void FilterDrawingWidget::disableFilter(bool disable)
+{
+  setDisabled(disable);
+  emit updated();
+}
+
+QStringList FilterDrawingWidget::properties() const
+{
+  return propertyModel_->properties();
 }
 
 // ======================================================
@@ -196,13 +217,96 @@ void FilterDrawingWidget::filterItems()
 // ======================================================
 
 FilterDrawingModel::FilterDrawingModel(const QString &header, QObject *parent)
-  : QStringListModel(parent)
+  : QAbstractItemModel(parent)
 {
   header_ = header;
 }
 
 FilterDrawingModel::~FilterDrawingModel()
 {
+}
+
+QModelIndex FilterDrawingModel::index(int row, int column, const QModelIndex &parent) const
+{
+  if (!parent.isValid()) {
+    // Top level item - use an invalid row value as an identifier.
+    if (row < order_.size())
+      return createIndex(row, column, 0xffffffff);
+  } else {
+    // Child item - store the parent's row in the created index.
+    if (parent.row() >= 0 && parent.row() < order_.size())
+      return createIndex(row, column, parent.row());
+  }
+
+  return QModelIndex();
+}
+
+QModelIndex FilterDrawingModel::parent(const QModelIndex &index) const
+{
+  // The root item and top level items return an invalid index.
+  if (!index.isValid() || index.internalId() == 0xffffffff)
+    return QModelIndex();
+
+  // Child items return an index that refers to the relevant top level item.
+  return createIndex(index.internalId(), 0, 0xffffffff);
+}
+
+bool FilterDrawingModel::hasChildren(const QModelIndex &index) const
+{
+  // The root item has children.
+  if (!index.isValid())
+    return true;
+
+  // Child items have no children.
+  if (index.internalId() != 0xffffffff)
+    return false;
+
+  // All top level items have children.
+  return true;
+}
+
+int FilterDrawingModel::columnCount(const QModelIndex &parent) const
+{
+  return 1;
+}
+
+int FilterDrawingModel::rowCount(const QModelIndex &parent) const
+{
+  // The root item has rows corresponding to the available properties.
+  if (!parent.isValid())
+    return order_.size();
+
+  // Top level items have rows corresponding to the available values for
+  // each property.
+  else if (parent.row() >= 0 && parent.row() < order_.size() && parent.column() == 0) {
+    QString key = order_.at(parent.row());
+    return choices_.value(key).size();
+
+  } else
+    return 0;
+}
+
+QVariant FilterDrawingModel::data(const QModelIndex &index, int role) const
+{
+  if (!index.isValid() || index.row() < 0 || index.column() != 0 || role != Qt::DisplayRole)
+    return QVariant();
+
+  // The values of top level items are obtained from the order list.
+  if (index.internalId() == 0xffffffff) {
+    QString name = order_.at(index.row());
+    if (index.row() < order_.size())
+        return QVariant(name);
+
+  // The values of child items are obtained from the values of the hash.
+  } else if (index.internalId() < order_.size()) {
+    // Child item
+    QString name = order_.at(index.internalId());
+    QStringList values = choices_.value(name);
+    if (index.row() < values.size())
+      return QVariant(values.at(index.row()));
+  }
+
+  return QVariant();
 }
 
 QVariant FilterDrawingModel::headerData(int section, Qt::Orientation orientation, int role) const
@@ -218,10 +322,39 @@ QVariant FilterDrawingModel::headerData(int section, Qt::Orientation orientation
 
 Qt::ItemFlags FilterDrawingModel::flags(const QModelIndex &index) const
 {
-  if (index.isValid())
-    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-  else
+  if (index.isValid() && hasChildren(index))
     return Qt::ItemIsEnabled;
+  else
+    return QAbstractItemModel::flags(index);
+}
+
+/**
+ * Returns the property names in a well-defined order.
+ */
+QStringList FilterDrawingModel::properties() const
+{
+  return order_;
+}
+
+void FilterDrawingModel::setProperties(const QHash<QString, QStringList> &choices)
+{
+  beginResetModel();
+  choices_ = choices;
+  order_ = choices.keys();
+  endResetModel();
+}
+
+QModelIndex FilterDrawingModel::find(const QString &name, const QString &value) const
+{
+  int i = order_.indexOf(name);
+  if (i == -1)
+    return QModelIndex();
+
+  int j = choices_.value(name).indexOf(value);
+  if (j == -1)
+    return QModelIndex();
+
+  return createIndex(j, 0, i);
 }
 
 } // namespace

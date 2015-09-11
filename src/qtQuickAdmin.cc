@@ -95,7 +95,7 @@ QuickAdmin::QuickAdmin(QWidget* parent, vector<quickMenu>& qm, int fc, int lc) :
   activeElement(-1), copyMenu(-1), copyElement(-1),firstcustom(fc), lastcustom(lc)
 {
   setModal(true);
-  QFont m_font = QFont("Arial", 12, 75);
+  QFont m_font = QFont("Helvetica", 12, 75);
 
   QLabel* mainlabel = new QLabel("<em><b>" + tr("Edit quickmenus") + "</b></em>", this);
   mainlabel->setFrameStyle(QFrame::StyledPanel | QFrame::Raised);

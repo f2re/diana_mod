@@ -74,7 +74,6 @@ private Q_SLOTS:
   void checkReftimeComplete();
   void checkPlotComplete();
 
-  void onModelFilter(const QString& text);
   void onPlotFilter(const QString& text);
 
 private:
@@ -82,11 +81,6 @@ private:
 
   vcross::QtManager_p vcrossm;
   std::auto_ptr<Ui_VcrossAddPlotDialog> ui;
-
-  QStringListModel* modelNames;
-  QSortFilterProxyModel* modelSorter;
-
-  QStringListModel* referenceTimes;
 
   QStringListModel* plotNames;
   QSortFilterProxyModel* plotSorter;

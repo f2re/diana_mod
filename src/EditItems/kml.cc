@@ -42,6 +42,12 @@
 #include <QRegExp>
 #include <QDateTime>
 
+#define MILOGGER_CATEGORY "diana.KML"
+#include <miLogger/miLogging.h>
+
+const char CROSS_SECTION_TYPE[] = "Cross section";
+const char TIME_GRAPH_TYPE[] = "Time Graph";
+
 namespace KML {
 
 // Finalizes KML document \a doc and returns a textual representation of it.
@@ -572,18 +578,17 @@ QList<DrawingItemBase *> createFromDomDocument(const QDomDocument &doc, const QS
       return QList<DrawingItemBase *>();
     }
 
-    if (objectType == "Composite") {
-      Drawing(itemObj)->setProperty("style:type", pmExtData.value("met:style:type"));
+    Drawing(itemObj)->setProperty("style:type", pmExtData.value("met:style:type"));
+
+    if (objectType == "Composite")
       static_cast<DrawingItem_Composite::Composite *>(itemObj)->createElements();
-    }
 
     // Initialise the geographic position and read the extended data for the item.
-    itemObj->setLatLonPoints(points);
+    itemObj->importLatLonPoints(points);
     itemObj->fromKML(pmExtData);
-
     items.append(itemObj);
-    DrawingItemBase *ditem = Drawing(itemObj);
 
+    DrawingItemBase *ditem = Drawing(itemObj);
     DrawingStyleManager::instance()->setStyle(ditem, pmExtData, "met:style:");
 
     ditem->setProperty("product", name);
@@ -703,6 +708,46 @@ QList<DrawingItemBase *> createFromFile(const QString &name, const QString &file
   items = createFromDomDocument(doc, name, fileName, error);
 
   return items;
+}
+
+LonLat latLonDegQPointToLonLat(const QPointF &point)
+{
+  return LonLat::fromDegrees(point.y(), point.x());
+}
+
+vcross::LonLat_v latLonDegQPointsToLonLat(const QList<QPointF>& points)
+{
+  vcross::LonLat_v lonLat(points.size());
+  std::transform(points.begin(), points.end(), lonLat.begin(),
+      latLonDegQPointToLonLat);
+  return lonLat;
+}
+
+CrossSection_v loadCrossSections(const QString &fileName)
+{
+  CrossSection_v crossSections;
+  QString error;
+
+  // Try to load each file, warning and skipping it if it cannot be loaded.
+  QList<DrawingItemBase *> items = KML::createFromFile(fileName, fileName, error);
+  if (!error.isEmpty()) {
+    METLIBS_LOG_WARN("Failed to load file '" << fileName.toStdString() << "'");
+    return crossSections;
+  }
+
+  // For each cross section found, create a structure containing a name and
+  // a list of geographic coordinates.
+
+  Q_FOREACH (DrawingItemBase *item, items) {
+    if (item->property("style:type") == CROSS_SECTION_TYPE) {
+      CrossSection cs;
+      cs.mLabel = item->property("Placemark:name").toString().toStdString();
+      cs.mPoints = latLonDegQPointsToLonLat(item->getLatLonPoints());
+      crossSections.push_back(cs);
+    }
+  }
+
+  return crossSections;
 }
 
 } // namespace

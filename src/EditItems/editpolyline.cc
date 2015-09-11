@@ -30,11 +30,13 @@
 #include "drawingpolyline.h"
 #include "editpolyline.h"
 #include "diGLPainter.h"
+#include "qtStatusGeopos.h"
 
 #include <diDrawingManager.h>
 #include <EditItems/drawingstylemanager.h>
 
 #include <QAction>
+#include <QToolTip>
 
 namespace EditItem_PolyLine {
 
@@ -50,8 +52,9 @@ PolyLine::PolyLine(int id)
   color_.setGreen(0);
   color_.setBlue(0);
 
+  addPoint_act_->setShortcut(tr("+"));
   QObject::connect(addPoint_act_, SIGNAL(triggered()), SLOT(addPoint()));
-  QObject::connect(removePoint_act_, SIGNAL(triggered()), SLOT(removePoint()));
+  QObject::connect(removePoint_act_, SIGNAL(triggered()), SLOT(removePoints()));
 }
 
 PolyLine::~PolyLine()
@@ -96,8 +99,8 @@ void PolyLine::updateHoverPos(const QPoint &pos)
 void PolyLine::mousePress(QMouseEvent *event, bool &repaintNeeded, bool *multiItemOp)
 {
   if (event->button() == Qt::LeftButton) {
-    pressedCtrlPointIndex_ = hitControlPoint(event->pos());
-    resizing_ = (pressedCtrlPointIndex_ >= 0);
+    mousePressControlPoints(event, repaintNeeded);
+    resizing_ = !pressedCtrlPointIndex_.isEmpty();
     moving_ = !resizing_;
     basePoints_ = points_;
     baseMousePos_ = event->pos();
@@ -114,33 +117,121 @@ void PolyLine::mouseHover(QMouseEvent *event, bool &repaintNeeded, bool selectin
   EditItemBase::mouseHover(event, repaintNeeded);
   if ((hoverCtrlPointIndex_ < 0) && !(selectingOnly)) {
     hoverLineIndex_ = hitLine(hoverPos_);
+    QToolTip::hideText();
   } else {
     hoverLineIndex_ = -1;
+    showTip();
   }
+}
+
+void PolyLine::mouseMove(QMouseEvent *event, bool &repaintNeeded)
+{
+  EditItemBase::mouseMove(event, repaintNeeded);
+  if (hoverCtrlPointIndex_ < 0) {
+    hoverLineIndex_ = hitLine(hoverPos_);
+    QToolTip::hideText();
+  } else {
+    hoverLineIndex_ = -1;
+    showTip();
+  }
+}
+
+void PolyLine::showTip()
+{
+  QPointF p = latLonPoints_.at(hoverCtrlPointIndex_);
+  int latDeg, latMin, lonDeg, lonMin;
+  StatusGeopos::degreesMinutes(p.x(), latDeg, latMin);
+  StatusGeopos::degreesMinutes(p.y(), lonDeg, lonMin);
+
+  QString text, ns = (p.x() >= 0.0) ? "N" : "S", we = (p.y() >= 0.0) ? "E" : "W";
+  text = QString("%1\xB0 %2'%3").arg(latDeg).arg(latMin).arg(ns);
+  text += QString(" %1\xB0 %2'%3").arg(lonDeg).arg(lonMin).arg(we);
+
+  QToolTip::showText(QCursor::pos(), text);
 }
 
 void PolyLine::keyPress(QKeyEvent *event, bool &repaintNeeded)
 {
-  if (((event->key() == Qt::Key_Backspace) || (event->key() == Qt::Key_Delete)
-       || (event->key() == Qt::Key_Minus)) && (hoverCtrlPointIndex_ >= 0)) {
-    const QList<QPointF> origPoints = getPoints();
-    removePoint();
-    hoverCtrlPointIndex_ = hitControlPoint(hoverPos_);
-    if (hoverCtrlPointIndex_ < 0) // no control point beneath the one we just removed, so check if we hit a line
-      hoverLineIndex_ = hitLine(hoverPos_);
-    repaintNeeded = true;
-    event->accept();
-  } else if (((event->key() == Qt::Key_Return) || (event->key() == Qt::Key_Enter)
-              || (event->key() == Qt::Key_Plus) || (event->key() == Qt::Key_Insert))
-             && (hoverCtrlPointIndex_ < 0) && (hoverLineIndex_ >= 0) && (hoverPos_ != QPoint(-1, -1))) {
+  if ((event->key() == Qt::Key_Backspace) || (event->key() == Qt::Key_Delete) ||
+      (event->key() == Qt::Key_Minus)) {
+
+    if (!pressedCtrlPointIndex_.isEmpty()) {
+      // Remove selected points
+      removePoints();
+      repaintNeeded = true;
+      event->accept();
+      return;
+    }
+
+  } else if ((hoverCtrlPointIndex_ < 0) &&
+             (hoverLineIndex_ >= 0) &&
+             (hoverPos_ != QPoint(-1, -1)) &&
+             ((event->key() == Qt::Key_Return) ||
+              (event->key() == Qt::Key_Enter) ||
+              (event->key() == Qt::Key_Plus) ||
+              (event->key() == Qt::Key_Insert))) {
+
+    // Add point
     const QList<QPointF> origPoints = getPoints();
     addPoint();
     hoverCtrlPointIndex_ = hitControlPoint(hoverPos_);
     repaintNeeded = true;
     event->accept();
-  } else {
-    EditItemBase::keyPress(event, repaintNeeded);
+    return;
+
+  } else if (event->modifiers() & Qt::ShiftModifier) {
+
+    // Nudge polyline or point
+
+    DrawingManager *drawm = DrawingManager::instance();
+    QList<QPointF> latLonPoints = drawm->PhysToGeo(points_);
+
+    foreach (const int index, pressedCtrlPointIndex_) {
+
+      // Obtain the geographic coordinates of each pressed control point.
+      QPointF p = latLonPoints.at(index);
+      float latMin = qRound(p.x() * 60);
+      float lonMin = qRound(p.y() * 60);
+
+      switch (event->key()) {
+      case Qt::Key_Left:
+        lonMin -= 1;
+        break;
+      case Qt::Key_Right:
+        lonMin += 1;
+        break;
+      case Qt::Key_Down:
+        latMin -= 1;
+        break;
+      case Qt::Key_Up:
+        latMin += 1;
+        break;
+      default:
+        continue;
+      }
+
+      float lat = qMin(qMax(-90.0, latMin/60.0), 90.0);
+      float lon = lonMin/60.0;
+
+      if (lon < -180.0) lon += 360.0;
+      if (lon >= 180.0) lon -= 360.0;
+
+      latLonPoints[index] = QPointF(lat, lon);
+      repaintNeeded = true;
+    }
+
+    if (repaintNeeded) {
+      QList<QPointF> newPoints = drawm->GeoToPhys(latLonPoints);
+
+      foreach (const int index, pressedCtrlPointIndex_)
+        movePointTo(index, newPoints.at(index));
+
+      event->accept();
+      return;
+    }
   }
+
+  EditItemBase::keyPress(event, repaintNeeded);
 }
 
 void PolyLine::incompleteMousePress(QMouseEvent *event, bool &repaintNeeded, bool &complete, bool &aborted)
@@ -164,8 +255,11 @@ void PolyLine::incompleteMouseHover(QMouseEvent *event, bool &repaintNeeded)
 {
   if (points_.size() > 0) {
     points_.last() = QPointF(event->pos());
+    hoverCtrlPointIndex_ = points_.size() - 1;
+    showTip();
     repaintNeeded = true;
-  }
+  } else
+    QToolTip::hideText();
 }
 
 void PolyLine::incompleteKeyPress(QKeyEvent *event, bool &repaintNeeded, bool &complete, bool &aborted)
@@ -187,10 +281,11 @@ void PolyLine::incompleteKeyPress(QKeyEvent *event, bool &repaintNeeded, bool &c
 void PolyLine::resize(const QPointF &pos)
 {
   const QPointF delta = pos - baseMousePos_;
-  Q_ASSERT(pressedCtrlPointIndex_ >= 0);
-  Q_ASSERT(pressedCtrlPointIndex_ < controlPoints_.size());
+  Q_ASSERT(!pressedCtrlPointIndex_.isEmpty());
   Q_ASSERT(basePoints_.size() == points_.size());
-  points_[pressedCtrlPointIndex_] = basePoints_.at(pressedCtrlPointIndex_) + delta;
+  foreach (const int index, pressedCtrlPointIndex_)
+    points_[index] = basePoints_.at(index) + delta;
+
   updateControlPoints();
 }
 
@@ -217,20 +312,34 @@ void PolyLine::addPoint()
   }
 }
 
-void PolyLine::removePoint()
+void PolyLine::removePoints()
 {
-  if ((hoverCtrlPointIndex_ >= 0) && (hoverCtrlPointIndex_ < points_.size()) && (points_.size() > 2)) {
-    points_.removeAt(hoverCtrlPointIndex_);
-    latLonPoints_.removeAt(hoverCtrlPointIndex_);
-    const int origHCPIndex = hoverCtrlPointIndex_;
-    hoverCtrlPointIndex_ = -1;
-    updateControlPoints();
+  QList<QPointF> newPoints, newLatLonPoints;
 
-    // unjoin polyline if removing a joined end point
-    if (((origHCPIndex == 0) && (joinId() < 0)) || ((origHCPIndex == points_.size()) && (joinId() > 0))) {
-      propertiesRef().insert("joinId", 0);
-      EditItemManager::instance()->updateJoins();
+  for (int i = 0; i < points_.size(); ++i) {
+    if (!pressedCtrlPointIndex_.contains(i)) {
+      newPoints.append(points_.at(i));
+      newLatLonPoints.append(latLonPoints_.at(i));
     }
+  }
+
+  if (newPoints.size() < 2)
+    return;
+
+  points_ = newPoints;
+  latLonPoints_ = newLatLonPoints;
+
+  QSet<int> origHCPIndexes = pressedCtrlPointIndex_;
+  pressedCtrlPointIndex_.clear();
+  if (hoverCtrlPointIndex_ >= points_.size())
+    hoverCtrlPointIndex_ = -1;
+
+  updateControlPoints();
+
+  // unjoin polyline if removing a joined end point
+  if ((origHCPIndexes.contains(0) && (joinId() < 0)) || (origHCPIndexes.contains(points_.size()) && (joinId() > 0))) {
+    propertiesRef().insert("joinId", 0);
+    EditItemManager::instance()->updateJoins();
   }
 }
 

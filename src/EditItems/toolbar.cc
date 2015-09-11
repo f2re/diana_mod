@@ -181,6 +181,11 @@ ToolBar::ToolBar(QWidget *parent)
   selectAction_->trigger();
 }
 
+void ToolBar::setSelectAction()
+{
+  selectAction_->trigger();
+}
+
 void ToolBar::setCreatePolyLineAction(const QString &type)
 {
   const int index = polyLineCombo_->findText(type);
@@ -195,6 +200,15 @@ void ToolBar::setPolyLineType(int index)
   // Obtain the style identifier from the style action and store it in the
   // main polyline action for later retrieval by the EditItemManager.
   polyLineAction_->setData(polyLineCombo_->itemData(index));
+}
+
+void ToolBar::setCreateSymbolAction(const QString &type)
+{
+  const int index = symbolCombo_->findText(type);
+  if (index >= 0) {
+    symbolCombo_->setCurrentIndex(index);
+    symbolAction_->trigger();
+  }
 }
 
 void ToolBar::setSymbolType(int index)

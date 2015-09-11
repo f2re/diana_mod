@@ -31,45 +31,60 @@
 #define DRAWINGDIALOG_H
 
 #include <QHash>
-#include <QStringListModel>
+#include <QAbstractItemModel>
+#include <QItemSelection>
 
 #include "qtDataDialog.h"
 
 class DrawingItemBase;
 class DrawingManager;
 class EditItemManager;
-class QListView;
+class QTreeView;
 
 namespace EditItems {
 
 class FilterDrawingWidget;
 
-class DrawingModel : public QAbstractListModel
+class DrawingModel : public QAbstractItemModel
 {
   Q_OBJECT
 
 public:
+  enum Roles {
+    NameRole = Qt::DisplayRole,
+    FileNameRole = Qt::UserRole
+  };
+
   DrawingModel(QObject *parent = 0);
   virtual ~DrawingModel();
 
   QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
+  QModelIndex parent(const QModelIndex &index) const;
+  bool hasChildren(const QModelIndex &index = QModelIndex()) const;
+  int columnCount(const QModelIndex &parent = QModelIndex()) const;
   int rowCount(const QModelIndex &parent = QModelIndex()) const;
   QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
   QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
   Qt::ItemFlags flags(const QModelIndex &index) const;
+  bool removeRows(int row, int count, const QModelIndex &parent = QModelIndex());
 
   QMap<QString, QString> items() const;
   void setItems(const QMap<QString, QString> &items);
 
   QModelIndex find(const QString &name) const;
+  QModelIndex findFile(const QString &fileName) const;
 
 public slots:
   void appendDrawing(const QString &name, const QString &fileName);
   void appendDrawing(const QString &fileName);
 
 private:
+  QStringList listFiles(const QString &fileName) const;
+
   QMap<QString, QString> items_;
+  QStringList order_;
+  QHash<QString, QStringList> fileCache_;
 };
 
 class DrawingDialog : public DataDialog
@@ -91,6 +106,7 @@ signals:
 public slots:
   void loadFile();
   void quickSave();
+  void reload();
   void saveAllItems();
   void saveFilteredItems();
   void saveSelectedItems();
@@ -98,26 +114,30 @@ public slots:
 
 private slots:
   void activateDrawing(const QItemSelection &selected, const QItemSelection &deselected);
+  void clearItems();
   void editDrawings();
   void extend(bool enable);
   void makeProduct();
+  void removeActiveDrawings();
   void showActiveContextMenu(const QPoint &pos);
+  void showDrawingContextMenu(const QPoint &pos);
+  void showItemInformation(const QList<DrawingItemBase *> &items);
   void updateButtons();
   void updateQuickSaveButton();
   virtual void updateTimes();
 
 private:
+  QSet<QPair<QString, QString> > itemProducts(const QList<DrawingItemBase *> &items);
   void updateFileInfo(const QList<DrawingItemBase *> &items, const QString &fileName);
   void saveFile(const QList<DrawingItemBase *> &items, const QString &fileName);
 
   DrawingModel drawingsModel_;
   DrawingModel activeDrawingsModel_;
-  DrawingModel editingModel_;
   DrawingManager *drawm_;
   EditItemManager *editm_;
   FilterDrawingWidget *filterWidget_;
-  QListView *activeList_;
-  QListView *drawingsList_;
+  QTreeView *activeList_;
+  QTreeView *drawingsList_;
   QPushButton *editButton_;
   QPushButton *filterButton_;
   QPushButton *quickSaveButton_;

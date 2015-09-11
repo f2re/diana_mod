@@ -41,6 +41,7 @@
 // required to tell fimex to use log4cpp
 #include <fimex/Logger.h>
 
+#include "diBuild.h"
 #include "diLocalSetupParser.h"
 #include "diPrintOptions.h"
 #include "diController.h"
@@ -51,12 +52,8 @@
 #include <puTools/miSetupParser.h>
 #include <iostream>
 
-#include <diBuild.h>
-
 #define MILOGGER_CATEGORY "diana.main_gui"
 #include <miLogger/miLogging.h>
-
-#include <QTextCodec>
 
 using namespace std;
 using namespace miutil;
@@ -83,11 +80,10 @@ void printUsage()
 
 int main(int argc, char **argv)
 {
-  cout << argv[0] << " : DIANA version: " << VERSION << "  build: "
-      << build_string << endl;
-  //UTF=8 support
-  QTextCodec * codec = QTextCodec::codecForName("UTF-8");
-  QTextCodec::setCodecForCStrings(codec);
+  cout << argv[0] << " : DIANA version: " << VERSION
+       << "  build: " << diana_build_string
+       << "  commit: " << diana_build_commit
+       << endl;
 
 #if defined(Q_WS_QWS)
   QApplication a(argc, argv, QApplication::GuiServer);
@@ -103,8 +99,6 @@ int main(int argc, char **argv)
 #endif
 
   string logfilename;
-  string ver_str= VERSION;
-  string build_str= build_string;
   string cl_lang;
   string diana_title="diana";
   string setupfile;
@@ -253,7 +247,7 @@ int main(int argc, char **argv)
     a.installTranslator( &qutil );
   }
 
-  DianaMainWindow * mw = new DianaMainWindow(&contr, ver_str,build_str,diana_title);
+  DianaMainWindow * mw = new DianaMainWindow(&contr, diana_title);
   mw->start();
 
 //  a.setMainWidget(mw);

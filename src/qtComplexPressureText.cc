@@ -121,7 +121,7 @@ ComplexPressureText::ComplexPressureText( QWidget* parent,
   cv = new complexValidator(this);
   
   text->setPalette(*tPalette);
-  text->setFont(QFont( "Arial", 14, QFont::Bold, false ));
+  text->setFont(QFont( "Helvetica", 14, QFont::Bold, false ));
   text->setMinimumWidth(30);
   text->setMaximumWidth(40);
   text->setFrame(false);

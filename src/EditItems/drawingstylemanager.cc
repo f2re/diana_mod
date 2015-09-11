@@ -388,6 +388,9 @@ void DrawingStyleManager::beginLine(DiGLPainter* gl, DrawingItemBase *item)
   gl->LineWidth(lineWidth);
 
   QColor borderColour = style.value(DSP_linecolour::name()).value<QColor>();
+  if (!borderColour.isValid())
+    borderColour = QColor(Qt::black);
+
   bool alphaOk;
   const int alpha = style.value(DSP_linealpha::name()).toInt(&alphaOk);
   if (borderColour.isValid())
@@ -408,8 +411,16 @@ void DrawingStyleManager::beginFill(DiGLPainter* gl, DrawingItemBase *item)
   QVariantMap style = getStyle(item);
 
   QColor fillColour = style.value(DSP_fillcolour::name()).value<QColor>();
+
   bool alphaOk;
-  const int alpha = style.value(DSP_fillalpha::name()).toInt(&alphaOk);
+  int alpha = style.value(DSP_fillalpha::name()).toInt(&alphaOk);
+
+  if (!fillColour.isValid()) {
+    fillColour = QColor(Qt::gray);
+    alpha = 50;
+    alphaOk = true;
+  }
+
   gl->Color4ub(fillColour.red(), fillColour.green(), fillColour.blue(), alphaOk ? alpha : 255);
 
   gl->PolygonMode(DiGLPainter::gl_FRONT_AND_BACK, DiGLPainter::gl_FILL);
@@ -502,15 +513,40 @@ QVariantMap DrawingStyleManager::getStyle(DrawingItemBase *item) const
   return getStyle(const_cast<const DrawingItemBase *>(item));
 }
 
+/**
+ * Get the style for the given item, merging the base style with any style
+ * properties defined in the item itself.
+ */
 QVariantMap DrawingStyleManager::getStyle(const DrawingItemBase *item) const
 {
-  // Merge the base style with any style properties defined in the item itself.
+  // Obtain the base style.
   const QString styleName = item->property("style:type").toString();
   QVariantMap style = styles_[item->category()].value(styleName);
 
-  foreach (QString key, item->propertiesRef().keys()) {
-    if (key.startsWith("style:"))
-      style[key.mid(6)] = item->propertiesRef().value(key);
+  // Collect any style properties in the item itself.
+  QVariantMap props = item->propertiesRef();
+  QHash<QString, QString> styleProperties;
+
+  QHash<QString, DrawingStyleProperty *> cProps = properties_[item->category()];
+
+  foreach (QString key, props.keys()) {
+    // If the property is a style property with a corresponding default
+    // then let it override the default value.
+    if (key.startsWith("style:") && cProps.contains(key.mid(6))) {
+      QVariant value = props.value(key);
+      if (value.type() != QVariant::StringList) {
+        QString s = value.toString();
+        if (s != style.value(key.mid(6)).toString())
+          styleProperties[key.mid(6)] = s;
+      }
+    }
+  }
+
+  // Override any properties with custom properties.
+  for (QHash<QString, DrawingStyleProperty *>::const_iterator it = cProps.begin(); it != cProps.end(); ++it) {
+    QString propName = it.key();
+    if (styleProperties.contains(propName))
+      style[propName] = it.value()->parse(styleProperties);
   }
 
   return style;
@@ -594,6 +630,7 @@ void DrawingStyleManager::drawLines(DiGLPainter* gl, const DrawingItemBase *item
   const bool reversed = !style.value(DSP_reversed::name()).toBool();
 
   if (style.value(DSP_decoration1::name()).isValid()) {
+
     QColor colour = style.value(DSP_decoration1_colour::name()).value<QColor>();
     bool alphaOk;
     const int alpha = style.value(DSP_decoration1_alpha::name()).toInt(&alphaOk);
@@ -806,7 +843,8 @@ void DrawingStyleManager::drawDecoration(DiGLPainter* gl, const QVariantMap &sty
 void DrawingStyleManager::fillLoop(DiGLPainter* gl, const DrawingItemBase *item, const QList<QPointF> &points) const
 {
   QVariantMap style = getStyle(item);
-  bool closed = style.value(DSP_closed::name()).toBool();
+  QVariant value = style.value(DSP_closed::name());
+  bool closed = value.isValid() ? value.toBool() : true;
 
   QList<QPointF> points_;
   if (style.value(DSP_linesmooth::name()).toBool())
@@ -817,7 +855,10 @@ void DrawingStyleManager::fillLoop(DiGLPainter* gl, const DrawingItemBase *item,
   // draw the interior
   gl->BlendFunc( DiGLPainter::gl_SRC_ALPHA, DiGLPainter::gl_ONE_MINUS_SRC_ALPHA );
   gl->Enable( DiGLPainter::gl_BLEND );
-  gl->drawPolygon(QPolygonF::fromList(points_));
+  if (points_.size() >= 3)
+    gl->drawPolygon(QPolygonF::fromList(points_));
+  else
+    gl->drawPolyline(QPolygonF::fromList(points_));
 }
 
 const QPainterPath DrawingStyleManager::interpolateToPath(const QList<QPointF> &points, bool closed)
