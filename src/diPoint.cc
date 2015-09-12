@@ -35,6 +35,45 @@ Rectangle translatedRectangle(const Rectangle& r, float dx, float dy)
   return ar;
 }
 
+void moveRectangle(Rectangle& r, float dx, float dy)
+{
+  r.x1 += dx;
+  r.y1 += dy;
+  r.x2 += dx;
+  r.y2 += dy;
+  r.ex1 += dx;
+  r.ey1 += dy;
+  r.ex2 += dx;
+  r.ey2 += dy;
+}
+
+Rectangle movedRectangle(const Rectangle& r, float dx, float dy)
+{
+  Rectangle ar = r;
+  moveRectangle(ar, dx, dy);
+  return ar;
+}
+
+void rotateRectangle(Rectangle& r, float dx, float dy)
+{
+  r.x1 -= dx;
+  r.y1 -= dy;
+  r.x2 += dx;
+  r.y2 += dy;
+  r.ex1 -= dx;
+  r.ey1 += dy;
+  r.ex2 += dx;
+  r.ey2 -= dy;
+}
+
+Rectangle rotatedRectangle(const Rectangle& r, float dx, float dy)
+{
+  Rectangle ar = r;
+  rotateRectangle(ar, dx, dy);
+  return ar;
+}
+
+
 void fixAspectRatio(Rectangle& rect, float requested_w_over_h, bool extend)
 {
   const float w_over_h = rect.width() / rect.height();
