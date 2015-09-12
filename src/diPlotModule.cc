@@ -1959,6 +1959,10 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       if ( spacePressed ){
           movemap=true;
           dorubberband=false;
+          areaInsert(true);
+          staticPlot_->panPlot(true);
+          res.newcursor = paint_move_cursor;
+          return;
       } else{
           movemap=false;
           dorubberband = true;
@@ -2014,18 +2018,6 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       res.repaint = true;
       res.newcursor = paint_move_cursor;
       return;
-    } else if ( movemap ){
-       const float dx = oldx - me->x(), dy = oldy - me->y();
-//       setMapAreaFromPhys(diutil::movedRectangle(getPhysRectangle(), dx, dy));
-       setMapAreaFromPhys(diutil::translatedRectangle(getPhysRectangle(), dx, dy));
-       oldx = me->x();
-       oldy = me->y();
-
-       res.action = quick_browsing;
-       res.background = true;
-       res.repaint = true;
-
-       return;
     }
 
   }
@@ -2051,27 +2043,46 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
          //res.action= rightclick;
 
            if (rotatemap){
-               float lat,lon;
+               float lat,lon,xmap,ymap;
+               int   h,w,nx,ny,nx1,ny1;
 
                PhysToGeo(me->x(),me->y(), lat,lon );
                std::string rotmap=requestedarea.getAreaString();
-               //METLIBS_LOG_WARN("X " << me->x() <<" Y " << me->y() << ", lat:"<<lat << " lon:"<<lon<<" map:"<<rotmap );
                boost::regex xRegEx("lon_0=(\\d+)");
                std::string xFormatString("lon_0="+miutil::from_number( int(lon) ));
                requestedarea.setAreaFromString(boost::regex_replace(rotmap, xRegEx, xFormatString, boost::match_default | boost::format_perl));
-               //METLIBS_LOG_WARN(requestedarea.getAreaString());
-               staticPlot_->setMapArea(requestedarea);
                rotatemap=false;
                METLIBS_LOG_WARN(diutil::adjustedRectangle(getPhysRectangle(), staticPlot_->getPhysWidth()*(-0.1), staticPlot_->getPhysHeight()*(-0.1)));
                setMapAreaFromPhys(diutil::adjustedRectangle(getPhysRectangle(), 0, 0));
+               //get lat lon mouse coordinates (center of screen)
+               //me->x(),me->y()
+               PhysToMap(me->x(),me->y(),xmap,ymap);
+               //calculate screen size getMapSize
+               w=abs(int((staticPlot_->getMapSize().x2-staticPlot_->getMapSize().x1)*(0.4)));
+               h=abs(int((staticPlot_->getMapSize().y2-staticPlot_->getMapSize().y1)*(0.4)));
 
+               //left top
+               nx=xmap-w;
+               ny=ymap-h;
+               //bottom right
+               nx1=xmap+w;
+               ny1=ymap+h;
+
+               setMapAreaFromMap(diutil::adjustedRectangle(Rectangle(nx,ny,nx1,ny1),-0.2,-0.2));
+               staticPlot_->setMapArea(requestedarea);
                res.repaint = true;
                res.background = true;
                return;
            }
        }
     } else if (me->button() == Qt::LeftButton) {
-
+        if ( movemap )  {
+            staticPlot_->panPlot(false);
+            res.repaint = true;
+            res.background = true;
+            movemap=false;
+            return;
+        }
       x1 = oldx;
       y1 = oldy;
       x2 = me->x();
@@ -2086,7 +2097,7 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
         y2 = oldy;
       }
       if (fabsf(x2 - x1) > rubberlimit && fabsf(y2 - y1) > rubberlimit) {
-        if (dorubberband || movemap)
+        if (dorubberband )
           plotnew = true;
       } else {
         res.action = pointclick;

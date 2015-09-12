@@ -1797,7 +1797,8 @@ bool DiPaintGLPainter::drawText(const std::string& s,
   DiPaintGLCanvas* c = (DiPaintGLCanvas*)canvas();
   const QFont& font = c->font();
   this->painter->setFont(font);
-  QString str = QString::fromStdString(s);
+//  QString str = QString::fromStdString(s);
+  QString str = QString::fromLocal8Bit(s.c_str());
   QFontMetricsF fm = painter->fontMetrics();
 
   // No need to record this transformation.
