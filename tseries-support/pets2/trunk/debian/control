@@ -1,0 +1,17 @@
+Source: metlibs-tseries-pets2
+Priority: optional
+Maintainer: Alexander Bürger <alexander.buerger@met.no>
+Build-Depends:  debhelper (>= 7), autotools-dev, g++,
+  autoconf (>=2.61), automake (>= 1.10), libtool (>= 1.5),
+  metlibs-putools-dev (>= 5.0.0), metlibs-tsdata-dev (>= 5.0.0),
+  metlibs-gltext-dev (>= 5.0.0), python
+Standards-Version: 3.7.3
+Section: libs
+
+Package: metlibs-pets2-dev
+Section: libdevel
+Architecture: any
+Depends: metlibs-putools-dev (>= 5.0.0), metlibs-tsdata-dev (>= 5.0.0),
+  metlibs-gltext-dev (>= 5.0.0), ${misc:Depends}
+Description: pudatatypes.
+ metlibs pudatatypes.

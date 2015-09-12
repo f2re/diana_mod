@@ -1,0 +1,39 @@
+#
+# configure.ac for puTools
+#
+
+AC_PREREQ(2.59)
+AC_INIT([puMet], [5.0.0], [diana@met.no])
+AM_INIT_AUTOMAKE([foreign])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+AC_CONFIG_SRCDIR([src/symbolMaker.h])
+AC_CONFIG_MACRO_DIR([m4])
+
+METNO_SET_VERSION_INFO(6.0.0)
+METNO_PROG_PKG_CONFIG
+
+AC_PROG_LIBTOOL
+AC_SUBST([LIBTOOL_DEPS]) 
+
+AC_PROG_CXX
+AC_LANG_PUSH(C++)
+AC_CXX_HAVE_STD
+AC_CXX_HAVE_STL
+AC_LANG_POP([C++])
+
+
+METNO_ENABLE_CONDITIONAL([SHARED_LIBRARY], [shared])
+
+METNO_REQUIRE_PKG([PUTOOLS],[puTools])
+
+GTEST_CHECK([test/gtest])
+
+AC_CONFIG_FILES([
+	puMet.pc
+	Makefile
+	src/Makefile
+	test/gtest/Makefile
+])
+
+AC_OUTPUT

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: puDatatypes
+Description: The puDatatypes Library
+Version: @VERSION@
+Libs: -fPIC -L${libdir} -lpuDatatypes
+Cflags: -I${includedir} -fPIC

@@ -1,0 +1,41 @@
+#
+# configure.ac for qUtilities
+#
+
+AC_PREREQ(2.59)
+AC_INIT([qUtilities], [5.1.1], [diana@met.no])
+AM_INIT_AUTOMAKE([foreign])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+AC_CONFIG_SRCDIR([src/qtHelpDialog.cc])
+AC_CONFIG_MACRO_DIR([m4])
+
+METNO_SET_VERSION_INFO(7.0.0)
+METNO_PROG_PKG_CONFIG
+
+AC_PROG_LIBTOOL
+AC_SUBST([LIBTOOL_DEPS]) 
+
+AC_PROG_CXX
+
+# Add extra C++ flags.
+CXXFLAGS="$CXXFLAGS ${OPT_FLAGS} -Wall -fPIC "
+
+AC_LANG_PUSH(C++)
+AC_CXX_HAVE_STD
+AC_CXX_HAVE_STL
+AC_LANG_POP([C++])
+
+
+METNO_ENABLE_CONDITIONAL([SHARED_LIBRARY], [shared])
+
+METNO_REQUIRE_BOOST
+METNO_REQUIRE_QT4([Core Gui])
+
+AC_CONFIG_FILES([
+	qUtilities.pc
+	Makefile
+	src/Makefile
+])
+
+AC_OUTPUT

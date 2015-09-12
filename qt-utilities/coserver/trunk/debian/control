@@ -1,0 +1,16 @@
+Source: metlibs-qt-coserver
+Priority: optional
+Maintainer: Alexander Bürger <alexander.buerger@met.no>
+Build-Depends:  debhelper (>= 7), autotools-dev, g++,
+  autoconf (>=2.61), automake (>= 1.10), libtool (>= 1.5),
+  metlibs-milogger-dev (>= 5.0.0),
+  libboost-dev, libqt4-dev, pkg-config
+Standards-Version: 3.7.3
+Section: libs
+
+Package: metlibs-coserver-dev
+Section: libdevel
+Architecture: any
+Depends: libqt4-dev, ${misc:Depends}
+Description: coserver client lib
+ metlibs coserver client lib

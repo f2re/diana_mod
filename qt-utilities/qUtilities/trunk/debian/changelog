@@ -1,0 +1,36 @@
+metlibs-qt-qutilities (5.1.1-1) unstable; urgency=low
+
+  * help dialog: replace close with clear
+
+ -- Alexander Bürger <alexander.buerger@met.no>  Tue, 10 Jun 2014 10:29:55 +0200
+
+metlibs-qt-qutilities (5.1.0-1) unstable; urgency=low
+
+  * help dialog: open external links via QDesktopServices
+  * help dialog: improved search field
+
+ -- Alexander Bürger <alexander.buerger@met.no>  Mon, 02 Jun 2014 14:12:55 +0200
+
+metlibs-qt-qutilities (5.0.2-1) precise; urgency=low
+
+  * Fixed build problems when linking with some variants of Diana.
+
+ -- David Boddie <david.boddie@met.no>  Tue, 04 Mar 2014 18:28:02 +0100
+
+metlibs-common-qutilities (5.0.1-1) unstable; urgency=low
+
+  * build metlibs-translations package
+
+ -- Alexander Carl Friedrich Bürger <alexander.buerger@met.no>  Thu, 06 Feb 2014 12:03:23 +0100
+
+metlibs-common-qutilities (5.0.0-2) unstable; urgency=low
+
+  * google tests
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Tue, 04 Feb 2014 15:50:01 +0100
+
+metlibs-qt-qutilities (5.0.0-1) unstable; urgency=low
+
+  * Split from all-in-one metlibs
+
+ -- Lisbeth Bergholt <lisbeth.bergholt@met.no>  Mon, 03 Feb 2014 11:44:12 +0100

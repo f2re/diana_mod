@@ -1,0 +1,16 @@
+Source: metlibs-common-pudatatypes
+Priority: optional
+Maintainer: Borge Moe <borge.moe@met.no>
+Build-Depends:  debhelper (>= 7), autotools-dev, g++,
+  autoconf (>=2.61), automake (>= 1.10), libtool (>= 1.5),
+  libgtest-dev, pkg-config, libboost-dev
+Standards-Version: 3.7.3
+Section: libs
+
+Package: metlibs-pudatatypes-dev
+Section: libdevel
+Architecture: any
+Depends: ${misc:Depends}
+Description: pudatatypes.
+ metlibs pudatatypes.
+

@@ -1,0 +1,3 @@
+usr/include/metlibs/qUtilities/*
+usr/lib/libqUtilities.*a
+usr/lib/pkgconfig/qUtilities.*
