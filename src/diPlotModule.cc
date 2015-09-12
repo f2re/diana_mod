@@ -2016,7 +2016,8 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
       return;
     } else if ( movemap ){
        const float dx = oldx - me->x(), dy = oldy - me->y();
-       setMapAreaFromPhys(diutil::movedRectangle(getPhysRectangle(), dx, dy));
+//       setMapAreaFromPhys(diutil::movedRectangle(getPhysRectangle(), dx, dy));
+       setMapAreaFromPhys(diutil::translatedRectangle(getPhysRectangle(), dx, dy));
        oldx = me->x();
        oldy = me->y();
 
