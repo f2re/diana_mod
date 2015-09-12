@@ -2068,7 +2068,7 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
                res.background = true;
                return;
            }
-
+       }
     } else if (me->button() == Qt::LeftButton) {
 
       x1 = oldx;
@@ -2119,12 +2119,9 @@ void PlotModule::sendMouseEvent(QMouseEvent* me, EventResult& res)
 }
 
 //keyboard event
-void PlotModule::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
-{
+void PlotModule::sendKeyboardEvent(QKeyEvent* ke, EventResult& res) {
    //if (ke->key() == Qt::Key_unknown) return;
    // when SPACE is holded
-
-
    if ((ke->isAutoRepeat() && ke->key() == Qt::Key_Space) ) {
      spacePressed= true;
    }else
@@ -2133,8 +2130,7 @@ void PlotModule::sendKeyboardEvent(QKeyEvent* ke, EventResult& res)
    }
 }
 
-void PlotModule::areaNavigation(PlotModule::AreaNavigationCommand anav, EventResult& res)
-{
+void PlotModule::areaNavigation(PlotModule::AreaNavigationCommand anav, EventResult& res){
   static int arrowKeyDirection = 1;
 
   float dx = 0, dy = 0;

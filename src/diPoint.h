@@ -111,12 +111,12 @@ void translateRectangle(Rectangle& r, float dx, float dy);
 Rectangle translatedRectangle(const Rectangle& r, float dx, float dy);
 
 //move ractangle
-void moveRectangle(Rectangle& r,  float dx, float dy);
-Rectangle movedRectangle(const Rectangle& r, float dx, float dy);
+//void moveRectangle(Rectangle& r,  float dx, float dy);
+//Rectangle movedRectangle(const Rectangle& r, float dx, float dy);
 
 //rotation ractangle
-void rotateRectangle(Rectangle& r,  float dx, float dy);
-Rectangle rotatedRectangle(const Rectangle& r, float dx, float dy);
+//void rotateRectangle(Rectangle& r,  float dx, float dy);
+//Rectangle rotatedRectangle(const Rectangle& r, float dx, float dy);
 
 void fixAspectRatio(Rectangle& rect, float requested_w_over_h, bool extend);
 Rectangle fixedAspectRatio(const Rectangle& rect, float requested_w_over_h, bool extend);
